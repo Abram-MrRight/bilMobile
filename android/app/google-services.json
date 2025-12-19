@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "847907735747",
+    "project_id": "bilchat-d4cf3",
+    "storage_bucket": "bilchat-d4cf3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:847907735747:android:b1286595ff963f25a53a76",
+        "android_client_info": {
+          "package_name": "com.example.chat_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbZ0A6F6wK0qyExZhSniikpoNYsfr_EV4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
