@@ -1,4 +1,4 @@
-import 'package:chat_app/shared/splashScreen/splashController.dart';
+import 'package:bilSend/shared/splashScreen/splashController.dart';
 import 'package:get/get.dart';
 
 class SplashBinding extends Bindings {

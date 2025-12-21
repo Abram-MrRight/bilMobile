@@ -1,12 +1,11 @@
-  import 'dart:async';
-
-import 'package:chat_app/Models/DatabaseHelper.dart';
-import 'package:chat_app/Routes/app_pages.dart';
-import 'package:chat_app/services/api/api_repository.dart';
-import 'package:chat_app/services/storage/storage_service.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import '../../../Models/DatabaseHelper.dart';
 import '../../../Models/upload_proof_model.dart';
+import '../../../Routes/app_pages.dart';
+import '../../../services/api/api_repository.dart';
+import '../../../services/storage/storage_service.dart';
 import '../../client/upload_proofs/ProofBadgeService.dart';
 import '../admin_upload_proofs/admin_proofs_controller.dart';
 

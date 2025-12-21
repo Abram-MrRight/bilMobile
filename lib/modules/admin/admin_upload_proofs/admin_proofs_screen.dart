@@ -1,8 +1,8 @@
-import 'package:chat_app/modules/admin/admin_upload_proofs/admin_proofs_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Models/DatabaseHelper.dart';
 import '../../client/upload_proofs/ProofBadgeService.dart';
+import 'admin_proofs_controller.dart';
 
 class AdminProofsScreen extends StatelessWidget {
   final VoidCallback? onProofsViewed;

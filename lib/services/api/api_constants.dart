@@ -1,9 +1,11 @@
 class ApiConstants {
   // 🌐 Base URL
 
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
-  //Public base URL for assets (e.g., images, audio files)
-  static const String publicBaseUrl = 'http://10.0.2.2:8000';
+  // Staging API base URL
+  static const String baseUrl ='https://staging.atong-abraham.site/api';
+
+  // Public base URL for assets (images, audio, files)
+  static const String publicBaseUrl ='https://staging.atong-abraham.site';
 
   // static const String baseUrl = 'http://10.161.208.154:8000/api';
   // // Public base URL for assets (e.g., images, audio files)   

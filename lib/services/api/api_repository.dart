@@ -1,11 +1,11 @@
 import 'dart:math' as logger;
-import 'package:chat_app/Models/DatabaseHelper.dart';
+import 'package:bilSend/Models/DatabaseHelper.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:chat_app/Models/upload_proof_model.dart';
-import 'package:chat_app/services/api/api_constants.dart';
-import 'package:chat_app/services/api/interceptors/dio_client.dart';
-import 'package:chat_app/services/storage/storage_service.dart';
+import 'package:bilSend/Models/upload_proof_model.dart';
+import 'package:bilSend/services/api/api_constants.dart';
+import 'package:bilSend/services/api/interceptors/dio_client.dart';
+import 'package:bilSend/services/storage/storage_service.dart';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;

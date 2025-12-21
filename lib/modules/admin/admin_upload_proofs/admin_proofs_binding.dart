@@ -1,6 +1,7 @@
-import 'package:chat_app/modules/admin/admin_upload_proofs/admin_proofs_controller.dart';
 import 'package:get/get.dart';
-import 'package:chat_app/services/api/api_repository.dart';
+
+import '../../../services/api/api_repository.dart';
+import 'admin_proofs_controller.dart';
 
 class AdminProofsBinding extends Bindings {
   @override

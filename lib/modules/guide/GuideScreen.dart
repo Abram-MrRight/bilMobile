@@ -13,7 +13,7 @@ class GuideScreen extends StatefulWidget {
 }
 
 class _GuideScreenState extends State<GuideScreen> {
-  String userRole = 'client'; // default until we fetch it
+  String userRole = 'client';
 
   final List<Map<String, dynamic>> guides = [
     {
@@ -35,7 +35,7 @@ class _GuideScreenState extends State<GuideScreen> {
       'title': 'Transactions',
       'image': 'assets/images/sendMoney.png',
       'screen': TransactionsScreen(),
-      'role': 'client', // only show for clients
+      'role': 'client',
     },
   ];
 

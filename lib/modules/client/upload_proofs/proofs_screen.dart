@@ -1,4 +1,4 @@
-import 'package:chat_app/modules/client/upload_proofs/proofs_controller.dart';
+import 'package:bilSend/modules/client/upload_proofs/proofs_controller.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';

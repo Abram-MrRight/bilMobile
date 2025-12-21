@@ -1,8 +1,8 @@
-import 'package:chat_app/Models/AuthUser.dart';
-import 'package:chat_app/Models/upload_proof_model.dart';
+import 'package:bilSend/Models/upload_proof_model.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'AuthUser.dart';
 import 'ProofStepGuide.dart';
 import 'agent.dart';
 import 'announcements.dart';
@@ -24,7 +24,7 @@ class DatabaseHelper {
 
   Future<Database> _initDB() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'chat_app.db');
+    final path = join(dbPath, 'bilSend.db');
 
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }

@@ -11,6 +11,8 @@ import '../../guide/GuideScreen.dart';
 import '../upload_proofs/proofs_controller.dart';
 import '../upload_proofs/proofs_screen.dart';
 import 'client_home_controller.dart';
+import 'package:lottie/lottie.dart';
+
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({Key? key}) : super(key: key);
@@ -74,7 +76,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         "image": "https://picsum.photos/800/402"
       },
     ];
-
     return Obx(() {
       if (announcementController.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
@@ -275,29 +276,83 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Obx(() => AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: Text(
-            "Welcome! ${controller.currentUserName.value.isNotEmpty ? controller.currentUserName.value : 'Loading...'}",
-            key: ValueKey(controller.currentUserName.value),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-          ),
-        )),
-        elevation: 4,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(15),
-            bottomRight: Radius.circular(15),
-          ),
-        ),
-        //Gradient goes here
-        flexibleSpace: Container(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 10), // 👈 taller
+        child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal, Colors.green],
+              colors: [
+                Color(0xFF009688), // teal
+                Color(0xFF4CAF50), // green
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // ☰ MENU ICON
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.menu, color: Colors.white),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
+
+                  // TITLE
+                  Expanded(
+                    child: Obx(() => AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) =>
+                          FadeTransition(opacity: animation, child: child),
+                      child: Text(
+                        "Welcome, ${controller.currentUserName.value.isNotEmpty
+                            ? controller.currentUserName.value
+                            : '...'} 👋",
+                        key: ValueKey(controller.currentUserName.value),
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )),
+                  ),
+
+                  // 🏃 LOTTIE WITH GLOW
+                  Container(
+                    margin: const EdgeInsets.only(left: 12),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.25),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: SizedBox(
+                      height: kToolbarHeight + 6,
+                      width: kToolbarHeight + 30,
+                      child: IgnorePointer(
+                        child: Lottie.asset(
+                          'assets/animations/boyRunning.json',
+                          fit: BoxFit.contain,
+                          repeat: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -307,7 +362,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       bottomNavigationBar: CurvedNavigationBar(
         key: navigatorKey,
         backgroundColor: Colors.transparent,
-        color: Color(0xFF00BFA5),
+        color: const Color(0xFF00BFA5),
         buttonBackgroundColor: Colors.white,
         items: items,
         index: index,

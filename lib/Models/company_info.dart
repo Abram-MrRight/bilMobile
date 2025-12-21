@@ -28,7 +28,7 @@ class CompanyInfo {
   String get fullLogoUrl {
     // If no logo, return a company-specific placeholder
     if (logoImage == null || logoImage!.isEmpty) {
-      return 'assets/images/company_logo_placeholder.png';
+      return 'assets/images/logo_placeholder.png';
     }
 
     String path = logoImage!;

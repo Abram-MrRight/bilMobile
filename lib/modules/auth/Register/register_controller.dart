@@ -1,5 +1,5 @@
-import 'package:chat_app/Routes/app_pages.dart';
-import 'package:chat_app/services/api/api_repository.dart';
+import 'package:bilSend/Routes/app_pages.dart';
+import 'package:bilSend/services/api/api_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

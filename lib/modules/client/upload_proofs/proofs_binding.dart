@@ -1,6 +1,6 @@
-import 'package:chat_app/modules/client/upload_proofs/proofs_controller.dart';
+import 'package:bilSend/modules/client/upload_proofs/proofs_controller.dart';
 import 'package:get/get.dart';
-import 'package:chat_app/services/api/api_repository.dart';
+import 'package:bilSend/services/api/api_repository.dart';
 
 class UploadProofBinding extends Bindings {
   @override

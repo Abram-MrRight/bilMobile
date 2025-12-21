@@ -1,4 +1,4 @@
-name: chat_app
+name: bilSend
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -41,6 +41,7 @@ dependencies:
   image_gallery_saver_plus: ^4.0.1
   qr_flutter: ^4.1.0
   pdf: ^3.11.3
+  lottie: ^2.7.0
   printing: ^5.14.2
 
   flutter:
@@ -53,8 +54,14 @@ dependencies:
 
 dev_dependencies:
   json_serializable: ^6.9.5
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/company_logo.jpg"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -68,6 +75,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/images/
+    - assets/animations/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -75,15 +85,6 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/images/chat.png
-    - assets/images/logo.jpg
-    - assets/images/SecondImage.jpg
-    - assets/images/agentLine.png
-    - assets/images/createChat.png
-    - assets/images/uploadProof.png
-    - assets/images/sendMoney.png
-  #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
