@@ -194,7 +194,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: FloatingActionButton(
             onPressed: _showCreateDialog,
             child: const Icon(Icons.add),
-            backgroundColor: Colors.teal,
+            backgroundColor: Colors.green,
           ),
         ),
       ],
@@ -217,7 +217,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Center(
-            child: Icon(Icons.add_circle_outline, size: 50, color: Colors.teal),
+            child: Icon(Icons.add_circle_outline, size: 50, color: Colors.green),
           ),
           const SizedBox(height: 10),
           const Text(

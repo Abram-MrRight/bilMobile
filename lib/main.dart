@@ -12,15 +12,15 @@ import 'modules/client/upload_proofs/proofs_controller.dart';
 import 'services/api/api_repository.dart';
 
 
-// Future<void> deleteDB() async {
-//   final dbPath = await getDatabasesPath();
-//   final path = join(dbPath, 'bilSend.db');
-//   await deleteDatabase(path);
-//   print('🗑️ Local SQLite database deleted');
-// }
+Future<void> deleteDB() async {
+  final dbPath = await getDatabasesPath();
+  final path = join(dbPath, 'bilSend.db');
+  await deleteDatabase(path);
+  print('🗑️ Local SQLite database deleted');
+}
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  // await deleteDB();
+  await deleteDB();
 
 
   // Register ApiRepository here

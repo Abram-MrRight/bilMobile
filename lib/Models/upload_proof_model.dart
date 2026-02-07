@@ -41,33 +41,9 @@ class Proof {
         isRead = isRead ?? false.obs,
         isNewForAdmin = isNewForAdmin ?? true.obs;
 
-  /// Detailed getter for proof image URL
+  /// Full proof image URL or placeholder
   String get fullImageUrl {
-    // If no image URL, return a proof-specific placeholder
-    if (imageUrl == null || imageUrl!.isEmpty) {
-      return '${ApiConstants.publicBaseUrl}/media/proofs/placeholder.png';
-    }
-
-    // Clean common backend response formats
-    String path = imageUrl!;
-
-    // Remove any accidental duplicate base URLs
-    const baseUrl = 'http://10.0.2.2:8000';
-    if (path.contains('$baseUrl/storage/')) {
-      path = path.replaceAll('$baseUrl/storage/', '');
-    }
-
-    // Handle different response formats
-    if (path.startsWith('/media/proofs/') || path.startsWith('/media/uploads/')) {
-      return '${ApiConstants.publicBaseUrl}$path';
-    }
-
-    if (path.startsWith('proofs/') || path.startsWith('uploads/')) {
-      return '${ApiConstants.publicBaseUrl}/media/$path';
-    }
-
-    // Use generic method as fallback
-    return ApiConstants.getFullMediaUrl(path, defaultPath: 'media/proofs/default.png');
+    return ApiConstants.getProofImageUrl(imageUrl);
   }
 
   factory Proof.fromJson(Map<String, dynamic> json) {

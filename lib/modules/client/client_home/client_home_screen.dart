@@ -219,21 +219,65 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     : () async {
                   final confirm = await Get.dialog<bool>(
                     AlertDialog(
-                      title: const Text('Chat with Company'),
-                      content: const Text(
-                        'Do you want to start a WhatsApp chat with the company?',
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                      contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+
+                      title: Row(
+                        children: [
+                          FaIcon(
+                            FontAwesomeIcons.whatsapp,
+                            color: Colors.green,
+                            size: 26,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Chat with Company',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+
+                      content: const Text(
+                        'You are about to start a WhatsApp conversation with the company. '
+                            'Do you want to continue?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          height: 1.4,
+                          color: Colors.black87,
+                        ),
+                      ),
+
                       actions: [
                         TextButton(
                           onPressed: () => Get.back(result: false),
-                          child: const Text('Cancel'),
+                          child: const Text(
+                            'CANCEL',
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
                           ),
                           onPressed: () => Get.back(result: true),
-                          child: const Text('Chat'),
+                          child: const Text(
+                            'CHAT ON WHATSAPP',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -362,7 +406,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       bottomNavigationBar: CurvedNavigationBar(
         key: navigatorKey,
         backgroundColor: Colors.transparent,
-        color: const Color(0xFF00BFA5),
+        color:   Color(0xFF4CAF50),
         buttonBackgroundColor: Colors.white,
         items: items,
         index: index,

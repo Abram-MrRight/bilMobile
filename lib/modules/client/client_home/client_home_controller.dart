@@ -225,37 +225,20 @@ class ClientHomeController extends GetxController {
       print('   Role: $role');
       print('   Has Image: ${profileImageFile != null}');
 
-      // Prepare FormData for potential file upload
-      final formData = dio.FormData.fromMap({
-        '_method': 'post',
+      // Prepare userData map
+      final Map<String, dynamic> userData = {
         'fullname': name,
         if (phoneNumber != null && phoneNumber.isNotEmpty) 'phone_number': phoneNumber,
         if (email != null && email.isNotEmpty) 'email': email,
         if (location != null && location.isNotEmpty) 'location': location,
         if (role != null && role.isNotEmpty) 'role': role,
-        if (profileImageFile != null)
-          'profile_image': await dio.MultipartFile.fromFile(
-            profileImageFile.path,
-            filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          ),
-      });
+        if (profileImageFile != null) 'image': profileImageFile.path,
+      };
 
-      // Debug: Check FormData contents
-      print('📦 FormData created:');
-      print('   Fields: ${formData.fields.length}');
-      print('   Files: ${formData.files.length}');
-
-      for (var field in formData.fields) {
-        print('   ➡️ ${field.key}: ${field.value}');
-      }
-      for (var file in formData.files) {
-        print('   📎 File: ${file.key}, Name: ${file.value.filename}');
-      }
-
+      // Send to repository (repository handles FormData conversion automatically)
       final updatedData = await apiRepository.updateUser(
         userId: userId,
-        userData: formData,
-        isMultipart: true,
+        userData: userData,
       );
 
       print('✅ API response received: $updatedData');
@@ -270,27 +253,16 @@ class ClientHomeController extends GetxController {
       currentUserRole.value = updatedUserJson['role'] ?? role ?? currentUserRole.value;
 
       // Update profile image path
-      final profileImagePath = updatedUserJson['profile_image'];
-
-      if (profileImagePath != null && profileImagePath.toString().isNotEmpty) {
-        final path = profileImagePath.toString();
-
-        if (path.startsWith('http://') || path.startsWith('https://')) {
-          // Full URL returned by backend → use as-is
-          profileImage.value = path;
-        } else if (path.startsWith('/')) {
-          // Relative path starting with / → append base URL
-          profileImage.value = 'http://10.0.2.2:8000$path';
-        } else {
-          // Only filename → append base URL + storage folder
-          profileImage.value = 'http://10.0.2.2:8000/storage/$path';
-        }
-      }
+      profileImage.value = ApiConstants.getFullMediaUrl(
+        updatedUserJson['profile_image'],
+        defaultPath: 'media/profile_images/default_avatar.png',
+      );
 
     } catch (e) {
       throw Exception('Failed to update user: $e');
     }
   }
+
 
   Future<void> deleteOwnAccount() async {
     try {
@@ -308,35 +280,31 @@ class ClientHomeController extends GetxController {
 
   Future<void> uploadProfileImage(File imageFile) async {
     try {
-      final fileName = imageFile.path.split('/').last;
-      final formData = dio.FormData.fromMap({
-        'profile_image': await dio.MultipartFile.fromFile(
-          imageFile.path,
-          filename: fileName,
-        ),
-      });
-
       final response = await apiRepository.updateUser(
         userId: currentUserId.value,
-        userData: formData,
-        isMultipart: true,
+        userData: {
+          'image': imageFile.path, // Just pass file path
+        },
       );
 
       final updatedUserJson = response['data'];
 
       if (updatedUserJson['profile_image'] != null) {
-        final profileImagePath = updatedUserJson['profile_image'];
-        profileImage.value =
-        '${ApiConstants.baseUrl.replaceFirst('/api', '')}/storage/$profileImagePath';
+        final path = updatedUserJson['profile_image'].toString();
+        profileImage.value = ApiConstants.getFullMediaUrl(
+          updatedUserJson['profile_image'],
+          defaultPath: 'media/profile_images/default_avatar.png',
+        );
       }
 
       await StorageService.saveUserDetails(updatedUserJson);
-
+      Get.snackbar('Success', 'Profile image updated successfully');
     } catch (e) {
       Get.snackbar('Error', 'Failed to upload profile image.');
       rethrow;
     }
   }
+
 
   Future<void> fetchWhatsAppContact() async {
     try {

@@ -16,21 +16,18 @@ class AdminProofsScreen extends StatelessWidget {
     'pending': Colors.orange,
     'money_received': Colors.green,
     'receiver_contacted': Colors.blueGrey,
-    'money_delivered': Colors.blue,
   };
 
   final Map<String, String> statusLabels = const {
     'pending': 'P',
     'money_received': 'MR',
     'receiver_contacted': 'RC',
-    'money_delivered': 'MD',
   };
 
   final Map<String, String> statusFullLabels = const {
     'pending': 'Pending',
     'money_received': 'Money Received',
     'receiver_contacted': 'Receiver Contacted',
-    'money_delivered': 'Money Delivered',
   };
 
   @override

@@ -84,40 +84,11 @@ class AuthUser {
     };
   }
   /// Getter to return full URL for profile image with error fixing
+  /// Returns a fully qualified profile image URL
   String get fullProfileImageUrl {
-    if (profileImage == null || profileImage!.isEmpty) {
-      return '${ApiConstants.publicBaseUrl}/media/profile_images/default_avatar.png';
-    }
-
-    String url = profileImage!;
-
-    // ⭐⭐⭐ FIX THE MALFORMED URL PATTERN ⭐⭐⭐
-    const baseUrl = 'http://10.0.2.2:8000';
-    const malformedPattern = '$baseUrl/storage/$baseUrl/';
-
-    if (url.startsWith(malformedPattern)) {
-      print('🔄 Fixing malformed profile image URL');
-      print('   Before: $url');
-      url = url.replaceFirst(malformedPattern, '$baseUrl/');
-      print('   After:  $url');
-      return url;
-    }
-
-    // Also fix other possible malformed patterns
-    if (url.contains('/storage/http://')) {
-      url = url.replaceAll('/storage/http://', 'http://');
-    }
-
-    if (url.contains('/storage/https://')) {
-      url = url.replaceAll('/storage/https://', 'https://');
-    }
-
-    // If it's already a proper full URL, return it
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-
-    // If it's a relative path, construct the full URL
-    return ApiConstants.getFullMediaUrl(url, defaultPath: 'media/profile_images/default_avatar.png');
+    return ApiConstants.getFullMediaUrl(
+      profileImage,
+      defaultPath: 'media/profile_images/default_avatar.png',
+    );
   }
 }

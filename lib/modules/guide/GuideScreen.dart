@@ -69,9 +69,9 @@ class _GuideScreenState extends State<GuideScreen> {
           runSpacing: 16,
           children: guides.where((guide) {
             // Only show card if 'role' is not set or matches the userRole
-            if (guide.containsKey('role')) {
-              return guide['role'] == userRole;
-            }
+            // if (guide.containsKey('role')) {
+            //   return guide['role'] == userRole;
+            // }
             return true; // show cards with no 'role' key for everyone
           }).map((guide) {
             return SizedBox(
