@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../modules/client/client_home/client_home_controller.dart';
+import '../../services/api/api_constants.dart';
 
 class UserProfileEditScreen extends StatefulWidget {
   const UserProfileEditScreen({super.key});
@@ -110,19 +111,16 @@ class _UserProfileEditScreenState extends State<UserProfileEditScreen> {
       ),
     );
   }
-
-  String _getFixedProfileImageUrl(String url) {
-    if (url.isEmpty) return '';
-    const baseUrl = 'http://10.0.2.2:8000';
-    const malformedPattern = '$baseUrl/storage/$baseUrl/';
-    if (url.startsWith(malformedPattern)) return url.replaceFirst(malformedPattern, '$baseUrl/');
-    return url;
-  }
-
   ImageProvider? _getProfileImage() {
     if (_pickedImage != null) return FileImage(_pickedImage!);
+
     final imageUrl = controller.profileImage.value;
-    if (imageUrl.isNotEmpty) return NetworkImage(_getFixedProfileImageUrl(imageUrl));
+    if (imageUrl.isNotEmpty) {
+      // Use ApiConstants to handle all URL formats
+      return NetworkImage(
+        ApiConstants.getFullMediaUrl(imageUrl, defaultPath: 'media/profile_images/default_avatar.png'),
+      );
+    }
     return null;
   }
 

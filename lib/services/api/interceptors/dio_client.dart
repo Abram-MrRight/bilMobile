@@ -1,7 +1,7 @@
-import 'package:chat_app/services/api/api_constants.dart';
-import 'package:chat_app/services/api/interceptors/dio_interceptors.dart';
+import 'package:bilSend/services/api/api_constants.dart';
+import 'package:bilSend/services/api/interceptors/dio_interceptors.dart';
 import 'package:dio/dio.dart';
-import 'package:chat_app/services/storage/storage_service.dart';
+import 'package:bilSend/services/storage/storage_service.dart';
 
 class DioClient {
   static final Dio _dio = Dio(

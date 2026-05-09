@@ -1,5 +1,7 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../Routes/app_pages.dart';
 import 'register_controller.dart';
 
@@ -11,15 +13,26 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late double width;
-  late Animation<double> animation, delayedAnimation, muchDelayedAnimation, leftCurve;
-  late AnimationController animationController;
+
+  // Entry animations
+  late AnimationController entryController;
+  late Animation<double> slideAnimation;
+  late Animation<double> delayedAnimation;
+  late Animation<double> muchDelayedAnimation;
+  late Animation<double> leftCurve;
+
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
+  // Orbit animation
+  late AnimationController orbitController;
+  late Animation<double> orbitAnimation;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final RegisterController controller = Get.put(
-    RegisterController(apiRepository: Get.find()),
-  );
+  final RegisterController controller =
+  Get.put(RegisterController(apiRepository: Get.find()));
 
   bool _showPassword = false;
   bool _showConfirmPassword = false;
@@ -35,36 +48,49 @@ class _RegisterScreenState extends State<RegisterScreen>
   void initState() {
     super.initState();
 
-    animationController = AnimationController(
+    /// ENTRY CONTROLLER
+    entryController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     );
 
-    animation = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeIn),
-    );
-    delayedAnimation = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
-      ),
-    );
-    muchDelayedAnimation = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
-      ),
-    );
-    leftCurve = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
+    slideAnimation = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(parent: entryController, curve: Curves.easeOut),
     );
 
-    animationController.forward();
+    delayedAnimation = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(
+        parent: entryController,
+        curve: const Interval(0.3, 1, curve: Curves.easeOut),
+      ),
+    );
+
+    muchDelayedAnimation = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(
+        parent: entryController,
+        curve: const Interval(0.6, 1, curve: Curves.easeOut),
+      ),
+    );
+
+    leftCurve = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(parent: entryController, curve: Curves.easeInOut),
+    );
+
+    entryController.forward();
+
+    /// ORBIT CONTROLLER
+    orbitController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
+
+    orbitAnimation = Tween<double>(begin: 0, end: 2 * pi).animate(orbitController);
   }
 
   @override
   void dispose() {
-    animationController.dispose();
+    entryController.dispose();
+    orbitController.dispose();
     super.dispose();
   }
 
@@ -76,14 +102,15 @@ class _RegisterScreenState extends State<RegisterScreen>
         email: email.isEmpty ? null : email,
         phoneNumber: phoneNumber.isEmpty ? null : phoneNumber,
         location: location.isEmpty ? null : location,
-        password: password,
-        confirmPassword: confirmPassword,
+        password: passwordController.text.trim(),
+        confirmPassword: confirmPasswordController.text.trim(),
       );
       if (result) Get.offAllNamed(Routes.LOGIN);
     }
   }
 
-  InputDecoration _buildInputDecoration(String label, {bool isPassword = false, VoidCallback? toggle}) {
+  InputDecoration _buildInputDecoration(String label,
+      {bool isPassword = false, VoidCallback? toggle}) {
     return InputDecoration(
       prefixIcon: Icon(
         isPassword ? Icons.lock : Icons.person,
@@ -103,9 +130,12 @@ class _RegisterScreenState extends State<RegisterScreen>
       ),
       suffixIcon: toggle != null
           ? IconButton(
-        icon: Icon(isPassword
-            ? (_showPassword ? Icons.visibility : Icons.visibility_off)
-            : (_showConfirmPassword ? Icons.visibility : Icons.visibility_off),
+        icon: Icon(
+            isPassword
+                ? (_showPassword ? Icons.visibility : Icons.visibility_off)
+                : (_showConfirmPassword
+                ? Icons.visibility
+                : Icons.visibility_off),
             color: Colors.white),
         onPressed: toggle,
       )
@@ -119,7 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     width = MediaQuery.of(context).size.width;
 
     return AnimatedBuilder(
-      animation: animationController,
+      animation: entryController,
       builder: (context, child) {
         return Scaffold(
           body: Container(
@@ -135,8 +165,10 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 50),
               children: [
+                /// TITLE + LOGO WITH ORBITING COMET
                 Transform(
-                  transform: Matrix4.translationValues(animation.value * width, 0, 0),
+                  transform:
+                  Matrix4.translationValues(slideAnimation.value * width, 0, 0),
                   child: Column(
                     children: [
                       const Text(
@@ -155,27 +187,78 @@ class _RegisterScreenState extends State<RegisterScreen>
                         ),
                       ),
                       const SizedBox(height: 18),
-                      Container(
-                        width: width * 0.5,
-                        height: width * 0.5,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: ClipOval(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Image.asset(
-                              'assets/images/logo.jpg',
-                              fit: BoxFit.fill,
+                      SizedBox(
+                        width: width * 0.45,
+                        height: width * 0.45,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Logo
+                            Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/logo.jpg',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
-                          ),
+
+                            // Orbiting comet dots
+                            AnimatedBuilder(
+                              animation: orbitAnimation,
+                              builder: (_, __) {
+                                final radius = (width * 0.45) / 2;
+                                return Stack(
+                                  children: List.generate(5, (index) {
+                                    final double angle =
+                                        orbitAnimation.value - (index * 0.35);
+                                    final double opacity =
+                                    (1 - (index * 0.18)).clamp(0.0, 1.0);
+                                    final double size =
+                                    (10 - index * 1.5).clamp(4.0, 10.0);
+
+                                    return Transform.translate(
+                                      offset: Offset(
+                                        radius * cos(angle),
+                                        radius * sin(angle),
+                                      ),
+                                      child: Opacity(
+                                        opacity: opacity,
+                                        child: Container(
+                                          width: size,
+                                          height: size,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.yellowAccent,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.yellow.withOpacity(opacity),
+                                                blurRadius: 6,
+                                                spreadRadius: 1,
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 25),
+
+                /// FORM
                 Transform(
                   transform: Matrix4.translationValues(leftCurve.value * width, 0, 0),
                   child: Padding(
@@ -188,7 +271,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                           TextFormField(
                             decoration: _buildInputDecoration('Full Name'),
                             onSaved: (val) => fullname = val!.trim(),
-                            validator: (val) => val!.isEmpty ? 'Enter full name' : null,
+                            validator: (val) =>
+                            val!.isEmpty ? 'Enter full name' : null,
                             style: const TextStyle(color: Colors.white),
                           ),
                           const SizedBox(height: 10),
@@ -205,7 +289,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                             decoration: _buildInputDecoration('Phone Number'),
                             onSaved: (val) => phoneNumber = val!.trim(),
                             keyboardType: TextInputType.phone,
-                            validator: (val) => val!.isEmpty ? 'Enter phone number' : null,
+                            validator: (val) =>
+                            val!.isEmpty ? 'Enter phone number' : null,
                             style: const TextStyle(color: Colors.white),
                           ),
                           const SizedBox(height: 10),
@@ -215,47 +300,48 @@ class _RegisterScreenState extends State<RegisterScreen>
                             onSaved: (val) => location = val!.trim(),
                             style: const TextStyle(color: Colors.white),
                           ),
-                          const SizedBox(height: 10),
                           // Password
+                          const SizedBox(height: 10),
+                          // Confirm Password
                           TextFormField(
+                            controller: passwordController,
                             decoration: _buildInputDecoration(
                               'Password',
                               isPassword: true,
                               toggle: () => setState(() => _showPassword = !_showPassword),
                             ),
                             obscureText: !_showPassword,
-                            onSaved: (val) => password = val!.trim(),
                             validator: (val) {
                               if (val == null || val.isEmpty) return 'Enter password';
                               if (val.length < 6) return 'Password must be 6+ chars';
                               return null;
                             },
-                            style: const TextStyle(color: Colors.white),
                           ),
-                          const SizedBox(height: 10),
-                          // Confirm Password
+                          const SizedBox(height: 25),
+
                           TextFormField(
+                            controller: confirmPasswordController,
                             decoration: _buildInputDecoration(
                               'Confirm Password',
                               isPassword: true,
                               toggle: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
                             ),
                             obscureText: !_showConfirmPassword,
-                            onSaved: (val) => confirmPassword = val!.trim(),
                             validator: (val) {
                               if (val == null || val.isEmpty) return 'Confirm password';
-                              if (val != password) return 'Passwords do not match';
+                              if (val != passwordController.text) return 'Passwords do not match';
                               return null;
                             },
-                            style: const TextStyle(color: Colors.white),
                           ),
                           const SizedBox(height: 25),
                           // Register Button
                           Transform(
-                            transform: Matrix4.translationValues(muchDelayedAnimation.value * width, 0, 0),
+                            transform: Matrix4.translationValues(
+                                muchDelayedAnimation.value * width, 0, 0),
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                const EdgeInsets.symmetric(vertical: 16),
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.teal,
                                 shape: RoundedRectangleBorder(
@@ -266,10 +352,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                               onPressed: _submitForm,
                               child: Obx(() {
                                 return controller.isLoading.value
-                                    ? const CircularProgressIndicator(color: Colors.teal)
+                                    ? const CircularProgressIndicator(
+                                    color: Colors.teal)
                                     : const Text(
                                   'Register',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
                                 );
                               }),
                             ),
@@ -278,7 +367,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Already have an account?', style: TextStyle(color: Colors.white70)),
+                              const Text('Already have an account?',
+                                  style: TextStyle(color: Colors.white70)),
                               const SizedBox(width: 5),
                               GestureDetector(
                                 onTap: () => Get.toNamed(Routes.LOGIN),

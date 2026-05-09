@@ -12,7 +12,6 @@ void onRequest(RequestOptions options, RequestInterceptorHandler handler) async 
       EasyLoading.show(status: 'Loading...');
     }
 
-    debugPrint('➡️ [Request] ${options.method} ${options.uri}');
     return handler.next(options);
   }
 
@@ -20,14 +19,12 @@ void onRequest(RequestOptions options, RequestInterceptorHandler handler) async 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     EasyLoading.dismiss();
-    debugPrint('✅ [Response] ${response.statusCode} ${response.data}');
     return handler.next(response);
   }
 
   @override
   void onError(DioError err, ErrorInterceptorHandler handler) {
     EasyLoading.dismiss();
-    debugPrint('❌ [Error] ${err.response?.statusCode} ${err.message}');
     if (err.response?.statusCode == 400 && err.response?.data != null) {
       final error = err.response?.data['error'] ?? 'Something went wrong.';
       EasyLoading.showToast(error.toString());

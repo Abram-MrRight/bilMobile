@@ -1,8 +1,8 @@
-import 'package:chat_app/modules/admin/admin_upload_proofs/admin_proofs_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../Models/DatabaseHelper.dart';
 import '../../client/upload_proofs/ProofBadgeService.dart';
+import 'admin_proofs_controller.dart';
 
 class AdminProofsScreen extends StatelessWidget {
   final VoidCallback? onProofsViewed;
@@ -16,21 +16,18 @@ class AdminProofsScreen extends StatelessWidget {
     'pending': Colors.orange,
     'money_received': Colors.green,
     'receiver_contacted': Colors.blueGrey,
-    'money_delivered': Colors.blue,
   };
 
   final Map<String, String> statusLabels = const {
     'pending': 'P',
     'money_received': 'MR',
     'receiver_contacted': 'RC',
-    'money_delivered': 'MD',
   };
 
   final Map<String, String> statusFullLabels = const {
     'pending': 'Pending',
     'money_received': 'Money Received',
     'receiver_contacted': 'Receiver Contacted',
-    'money_delivered': 'Money Delivered',
   };
 
   @override

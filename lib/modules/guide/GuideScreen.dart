@@ -13,7 +13,7 @@ class GuideScreen extends StatefulWidget {
 }
 
 class _GuideScreenState extends State<GuideScreen> {
-  String userRole = 'client'; // default until we fetch it
+  String userRole = 'client';
 
   final List<Map<String, dynamic>> guides = [
     {
@@ -35,7 +35,7 @@ class _GuideScreenState extends State<GuideScreen> {
       'title': 'Transactions',
       'image': 'assets/images/sendMoney.png',
       'screen': TransactionsScreen(),
-      'role': 'client', // only show for clients
+      'role': 'client',
     },
   ];
 
@@ -69,9 +69,9 @@ class _GuideScreenState extends State<GuideScreen> {
           runSpacing: 16,
           children: guides.where((guide) {
             // Only show card if 'role' is not set or matches the userRole
-            if (guide.containsKey('role')) {
-              return guide['role'] == userRole;
-            }
+            // if (guide.containsKey('role')) {
+            //   return guide['role'] == userRole;
+            // }
             return true; // show cards with no 'role' key for everyone
           }).map((guide) {
             return SizedBox(

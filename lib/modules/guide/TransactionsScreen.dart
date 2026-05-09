@@ -23,36 +23,36 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   final RxBool isLoading = false.obs;
   final RxBool hasMore = true.obs;
   int page = 1;
-  final int pageSize = 4;
-  final ScrollController _scrollController = ScrollController();
+  final int pageSize = 5;
 
   @override
   void initState() {
     super.initState();
-    fetchTransactions();
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 50 &&
-          !isLoading.value &&
-          hasMore.value) {
-        fetchTransactions();
-      }
-    });
+    fetchTransactions(); // Load first page
   }
 
+  /// Fetch transactions page by page
   Future<void> fetchTransactions() async {
+    if (!hasMore.value || isLoading.value) return;
+
     try {
       isLoading.value = true;
+
       final List<TransactionModel> fetched =
       await apiRepository.getTransactions(page: page, pageSize: pageSize);
 
-      if (fetched.length < pageSize) {
-        hasMore.value = false;
+      // Add only unique items to avoid duplicates
+      final newItems = fetched.where((txn) =>
+      !transactions.any((t) => t.transactionReference == txn.transactionReference)
+      ).toList();
+
+      if (newItems.isEmpty || fetched.length < pageSize) {
+        hasMore.value = false; // No more pages
       } else {
-        page++;
+        page++; // Increment page only if new items exist
       }
 
-      transactions.addAll(fetched);
+      transactions.addAll(newItems);
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -78,7 +78,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String _formatAmount(String amount) =>
       _parseAmount(amount).toStringAsFixed(2);
 
-  /// Cross-platform safe PDF share
+  /// Share or save PDF safely
   Future<void> _sharePdfFile(Uint8List pdfBytes, String filename) async {
     try {
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
@@ -96,8 +96,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         );
       }
     } catch (e) {
-      print('Failed to share PDF:');
-      print(e);
       Get.snackbar(
         'Error',
         'Failed to share PDF: $e',
@@ -108,6 +106,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
   }
 
+  /// Generate PDF receipt
   Future<void> _generateAndSharePDF(TransactionModel txn) async {
     try {
       final pdf = pw.Document();
@@ -121,8 +120,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-
-                  /// ================= HEADER =================
+                  // Header
                   pw.Row(
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
@@ -162,11 +160,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ),
                     ],
                   ),
-
                   pw.SizedBox(height: 16),
                   pw.Divider(),
 
-                  /// ================= MAIN DETAILS TABLE =================
+                  // Details Table
                   pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300),
                     columnWidths: {
@@ -174,34 +171,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       1: const pw.FlexColumnWidth(3),
                     },
                     children: [
-
                       _tableRow('Transfer Amount',
                           '${_formatAmount(txn.amount)} ${txn.currency}', true),
-
                       _tableRow('Net Amount',
                           '${_formatAmount(txn.netAmount)} ${txn.currency}', true),
-
                       _tableRow('Sender (FROM)', txn.senderName),
-
                       _tableRow(
                           'Receiver (TO)',
                           '${txn.receiverName}\n${txn.receiverContact ?? ''}'),
-
-                      _tableRow(
-                          'Transaction Fee',
+                      _tableRow('Transaction Fee',
                           '${_formatAmount(txn.chargeAmount)} ${txn.currency}'),
-
                       _tableRow('Status', 'COMPLETED', false, PdfColors.green),
-
                       _tableRow('Date', _formatDate(txn.confirmedAt)),
-
                       _tableRow('Time', _formatTime(txn.confirmedAt)),
                     ],
                   ),
-
                   pw.SizedBox(height: 20),
 
-                  /// ================= QR CODE =================
+                  // QR Code
                   pw.Center(
                     child: pw.Column(
                       children: [
@@ -223,10 +210,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ],
                     ),
                   ),
-
                   pw.Spacer(),
 
-                  /// ================= SIGNATURE SECTION =================
+                  // Signature
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
@@ -234,11 +220,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       _signatureBlock('Customer Signature'),
                     ],
                   ),
-
                   pw.SizedBox(height: 20),
                   pw.Divider(),
 
-                  /// ================= FOOTER =================
+                  // Footer
                   pw.Center(
                     child: pw.Column(
                       children: [
@@ -277,16 +262,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
-  pw.TableRow _tableRow(
-      String label,
-      String value, [
-        bool highlight = false,
-        PdfColor? valueColor,
-      ]) {
+
+  pw.TableRow _tableRow(String label, String value,
+      [bool highlight = false, PdfColor? valueColor]) {
     return pw.TableRow(
-      decoration: highlight
-          ? pw.BoxDecoration(color: PdfColors.teal100)
-          : null,
+      decoration: highlight ? pw.BoxDecoration(color: PdfColors.teal100) : null,
       children: [
         pw.Padding(
           padding: const pw.EdgeInsets.all(8),
@@ -299,8 +279,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             value,
             style: pw.TextStyle(
               fontSize: highlight ? 14 : 11,
-              fontWeight:
-              highlight ? pw.FontWeight.bold : pw.FontWeight.normal,
+              fontWeight: highlight ? pw.FontWeight.bold : pw.FontWeight.normal,
               color: valueColor ?? PdfColors.black,
             ),
           ),
@@ -331,51 +310,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-
-  pw.Widget _pdfDetailCard(String title, String content, PdfColor color) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: color, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(10),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(title,
-              style: pw.TextStyle(
-                  fontSize: 12, fontWeight: pw.FontWeight.bold, color: color)),
-          pw.SizedBox(height: 8),
-          pw.Text(content, style: const pw.TextStyle(fontSize: 14)),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _pdfDetailRow(String label, String value,
-      {bool isStatus = false, PdfColor color = PdfColors.black}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 6),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(label, style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey)),
-          if (isStatus)
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: pw.BoxDecoration(
-                borderRadius: pw.BorderRadius.circular(10),
-              ),
-              child: pw.Text(value,
-                  style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: color)),
-            )
-          else
-            pw.Text(value, style: pw.TextStyle(fontSize: 12, color: color)),
-        ],
-      ),
-    );
-  }
-
   void _showTransactionDetails(TransactionModel txn) {
     showDialog(
       context: context,
@@ -384,7 +318,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -427,8 +360,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ],
               ),
             ),
-
-            // Content
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -506,8 +437,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         }
 
         return ListView.builder(
-          controller: _scrollController,
-          itemCount: transactions.length + 1,
+          padding: const EdgeInsets.only(top: 25, bottom: 20),
+          itemCount: transactions.length + (hasMore.value ? 1 : 0),
           itemBuilder: (context, index) {
             if (index < transactions.length) {
               final txn = transactions[index];
@@ -520,8 +451,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     color: Colors.white,
                     elevation: 4,
                     child: ListTile(
-                      leading:
-                      const Icon(Icons.monetization_on_outlined, color: Colors.teal),
+                      leading: const Icon(Icons.monetization_on_outlined, color: Colors.teal),
                       title: Text('${_formatAmount(txn.amount)} ${txn.currency}'),
                       subtitle: Text('${txn.senderName} → ${txn.receiverName}'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -530,14 +460,28 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ),
               );
             } else {
+              // "View More" Button
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
-                  child: isLoading.value
-                      ? const CircularProgressIndicator()
-                      : hasMore.value
-                      ? const SizedBox.shrink()
-                      : const Text('No more transactions'),
+                  child: hasMore.value
+                      ? ElevatedButton(
+                    onPressed: isLoading.value ? null : fetchTransactions,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    ),
+                    child: isLoading.value
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                        : const Text('View More'),
+                  )
+                      : const SizedBox.shrink(),
                 ),
               );
             }

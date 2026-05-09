@@ -1,8 +1,8 @@
-import 'package:chat_app/Models/AuthUser.dart';
-import 'package:chat_app/Models/upload_proof_model.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:bilSend/Models/transaction_model.dart';
+import 'package:bilSend/Models/upload_proof_model.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'AuthUser.dart';
 import 'ProofStepGuide.dart';
 import 'agent.dart';
 import 'announcements.dart';
@@ -24,7 +24,7 @@ class DatabaseHelper {
 
   Future<Database> _initDB() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'chat_app.db');
+    final path = join(dbPath, 'bilSend.db');
 
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
@@ -115,6 +115,20 @@ class DatabaseHelper {
     created_at TEXT,
     updated_at TEXT
   )
+''');
+    await db.execute('''
+CREATE TABLE transactions(
+  id INTEGER PRIMARY KEY,
+  sender_name TEXT,
+  receiver_name TEXT,
+  receiver_contact TEXT,
+  amount TEXT,
+  currency TEXT,
+  transaction_reference TEXT,
+  charge_amount TEXT,
+  net_amount TEXT,
+  confirmed_at TEXT
+)
 ''');
   }
 
@@ -498,5 +512,71 @@ class DatabaseHelper {
     await db.delete('proof_steps');
   }
 
+  // ---------------------- TRANSACTIONS ----------------------
+  Future<int> insertTransaction(TransactionModel transaction) async {
+    final db = await database;
+    return await db.insert(
+      'transactions',
+      {
+        'id': transaction.id,
+        'sender_name': transaction.senderName,
+        'receiver_name': transaction.receiverName,
+        'receiver_contact': transaction.receiverContact,
+        'amount': transaction.amount,
+        'currency': transaction.currency,
+        'transaction_reference': transaction.transactionReference,
+        'charge_amount': transaction.chargeAmount,
+        'net_amount': transaction.netAmount,
+        'confirmed_at': transaction.confirmedAt.toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> insertTransactionList(List<TransactionModel> transactions) async {
+    final db = await database;
+    final batch = db.batch();
+    for (var t in transactions) {
+      batch.insert(
+        'transactions',
+        {
+          'id': t.id,
+          'sender_name': t.senderName,
+          'receiver_name': t.receiverName,
+          'receiver_contact': t.receiverContact,
+          'amount': t.amount,
+          'currency': t.currency,
+          'transaction_reference': t.transactionReference,
+          'charge_amount': t.chargeAmount,
+          'net_amount': t.netAmount,
+          'confirmed_at': t.confirmedAt.toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<TransactionModel>> getAllTransactions() async {
+    final db = await database;
+    final result = await db.query('transactions', orderBy: 'confirmed_at DESC');
+    return result.map((json) => TransactionModel.fromJson(json)).toList();
+  }
+
+  Future<TransactionModel?> getTransactionById(int id) async {
+    final db = await database;
+    final result = await db.query('transactions', where: 'id = ?', whereArgs: [id]);
+    return result.isNotEmpty ? TransactionModel.fromJson(result.first) : null;
+  }
+
+  Future<int> deleteTransactionById(int id) async {
+    final db = await database;
+    return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> clearTransactions() async {
+    final db = await database;
+    await db.delete('transactions');
+  }
 
 }

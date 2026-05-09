@@ -1,7 +1,6 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 import '../../../Routes/app_pages.dart';
 import 'forgot_password.dart';
@@ -17,18 +16,22 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late double width;
-  late Animation<double> animation,
-      delayedAnimation,
-      muchDelayedAnimation,
-      leftCurve;
-  late AnimationController animationController;
+
+  // 🎬 Entry animations
+  late AnimationController entryController;
+  late Animation<double> slideAnimation;
+  late Animation<double> delayedAnimation;
+  late Animation<double> muchDelayedAnimation;
+
+  // 🔵 Orbit animation
+  late AnimationController orbitController;
+  late Animation<double> orbitAnimation;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final LoginController loginController = Get.put(
-    LoginController(apiRepository: Get.find()),
-  );
+  final LoginController loginController =
+  Get.put(LoginController(apiRepository: Get.find()));
 
   bool _autoValidate = false;
   bool _showPassword = false;
@@ -39,36 +42,45 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
 
-    animationController = AnimationController(
+    /// ENTRY CONTROLLER
+    entryController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     );
 
-    animation = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeIn),
-    );
-    delayedAnimation = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
-      ),
-    );
-    muchDelayedAnimation = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
-      ),
-    );
-    leftCurve = Tween<double>(begin: -1, end: 0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeInOut),
+    slideAnimation = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(parent: entryController, curve: Curves.easeOut),
     );
 
-    animationController.forward();
+    delayedAnimation = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(
+        parent: entryController,
+        curve: const Interval(0.3, 1, curve: Curves.easeOut),
+      ),
+    );
+
+    muchDelayedAnimation = Tween<double>(begin: -1, end: 0).animate(
+      CurvedAnimation(
+        parent: entryController,
+        curve: const Interval(0.6, 1, curve: Curves.easeOut),
+      ),
+    );
+
+    entryController.forward();
+
+    /// ORBIT CONTROLLER
+    orbitController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
+
+    orbitAnimation = Tween<double>(begin: 0, end: 2 * pi).animate(orbitController);
   }
 
   @override
   void dispose() {
-    animationController.dispose();
+    entryController.dispose();
+    orbitController.dispose();
     super.dispose();
   }
 
@@ -77,18 +89,17 @@ class _LoginScreenState extends State<LoginScreen>
       _formKey.currentState!.save();
       loginController.loginUser(_phoneNumber, _password);
     } else {
-      setState(() {
-        _autoValidate = true;
-      });
+      setState(() => _autoValidate = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     width = MediaQuery.of(context).size.width;
+
     return AnimatedBuilder(
-      animation: animationController,
-      builder: (BuildContext context, Widget? child) {
+      animation: entryController,
+      builder: (context, _) {
         return Scaffold(
           body: Container(
             decoration: const BoxDecoration(
@@ -100,50 +111,108 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 50),
-              children: <Widget>[
+              children: [
+                /// TITLE + LOGO
                 Transform(
-                  transform: Matrix4.translationValues(animation.value * width, 0, 0),
+                  transform:
+                  Matrix4.translationValues(slideAnimation.value * width, 0, 0),
                   child: Column(
                     children: [
                       const Text(
                         'Login',
                         style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                  color: Colors.black38,
-                                  offset: Offset(2, 2),
-                                  blurRadius: 4)
-                            ]),
+                          color: Colors.white,
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black38,
+                              offset: Offset(2, 2),
+                              blurRadius: 4,
+                            )
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 20),
-                      Container(
-                        width: width * 0.5,
-                        height: width * 0.5,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: ClipOval(
-                          child: Padding(
-                            padding: const EdgeInsets.all(22.0), // optional: reduce padding for better fit
-                            child: Image.asset(
-                              'assets/images/logo.jpg',
-                              fit: BoxFit.fill, // cover ensures it fills the circle
+
+                      /// LOGO WITH RUNNING / COMET DOT
+                      SizedBox(
+                        width: width * 0.45,
+                        height: width * 0.45,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Logo
+                            Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                              padding: const EdgeInsets.all(22),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/logo.jpg',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
-                          ),
+
+                            // Running comet trail
+                            AnimatedBuilder(
+                              animation: orbitAnimation,
+                              builder: (_, __) {
+                                final radius = (width * 0.45) / 2;
+
+                                return Stack(
+                                  children: List.generate(5, (index) {
+                                    final double angle =
+                                        orbitAnimation.value - (index * 0.35);
+                                    final double opacity = (1 - (index * 0.18)).clamp(0.0, 1.0);
+                                    final double size = (10 - index * 1.5).clamp(4.0, 10.0);
+
+                                    return Transform.translate(
+                                      offset: Offset(
+                                        radius * cos(angle),
+                                        radius * sin(angle),
+                                      ),
+                                      child: Opacity(
+                                        opacity: opacity,
+                                        child: Container(
+                                          width: size,
+                                          height: size,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.yellowAccent,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.yellow.withOpacity(opacity),
+                                                blurRadius: 6,
+                                                spreadRadius: 1,
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 30),
+
+                /// FORM
                 Transform(
-                  transform: Matrix4.translationValues(leftCurve.value * width, 0, 0),
+                  transform:
+                  Matrix4.translationValues(delayedAnimation.value * width, 0, 0),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: Form(
                       key: _formKey,
                       autovalidateMode: _autoValidate
@@ -151,124 +220,108 @@ class _LoginScreenState extends State<LoginScreen>
                           : AutovalidateMode.disabled,
                       child: Column(
                         children: [
-                          TextFormField(
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty || value.length < 9) {
-                                return "Enter a valid phone number";
-                              }
-                              return null;
-                            },
-                            onSaved: (value) => _phoneNumber = value!.trim(),
+                          _inputField(
+                            icon: Icons.phone,
+                            label: "Phone Number",
                             keyboardType: TextInputType.phone,
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.phone, color: Colors.white),
-                              labelText: 'Phone Number',
-                              labelStyle: const TextStyle(color: Colors.white70),
-                              filled: true,
-                              fillColor: Colors.white24,
-                              focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: const BorderSide(color: Colors.white)),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide.none),
-                            ),
-                            style: const TextStyle(color: Colors.white),
+                            validator: (v) =>
+                            v == null || v.length < 9 ? "Invalid phone number" : null,
+                            onSaved: (v) => _phoneNumber = v!,
                           ),
                           const SizedBox(height: 20),
-                          TextFormField(
-                            validator: (val) {
-                              if (val!.isEmpty) return "Enter valid password";
-                              return null;
-                            },
-                            onSaved: (val) => _password = val!,
-                            obscureText: !_showPassword,
-                            decoration: InputDecoration(
-                              prefixIcon: const Icon(Icons.lock, color: Colors.white),
-                              labelText: 'Password',
-                              labelStyle: const TextStyle(color: Colors.white70),
-                              filled: true,
-                              fillColor: Colors.white24,
-                              focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: const BorderSide(color: Colors.white)),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide.none),
-                              suffixIcon: IconButton(
-                                icon: Icon(_showPassword ? Icons.visibility : Icons.visibility_off,
-                                    color: Colors.white),
-                                onPressed: () {
-                                  setState(() {
-                                    _showPassword = !_showPassword;
-                                  });
-                                },
+                          _inputField(
+                            icon: Icons.lock,
+                            label: "Password",
+                            obscure: !_showPassword,
+                            validator: (v) => v!.isEmpty ? "Enter password" : null,
+                            onSaved: (v) => _password = v!,
+                            suffix: IconButton(
+                              icon: Icon(
+                                _showPassword ? Icons.visibility : Icons.visibility_off,
+                                color: Colors.white,
                               ),
+                              onPressed: () =>
+                                  setState(() => _showPassword = !_showPassword),
                             ),
-                            style: const TextStyle(color: Colors.white),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 15),
+
+                /// FORGOT PASSWORD
                 Transform(
-                  transform: Matrix4.translationValues(delayedAnimation.value * width, 0, 0),
+                  transform:
+                  Matrix4.translationValues(delayedAnimation.value * width, 0, 0),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
-                        onTap: () {
-                          Get.to(() => ForgetPassword());
-                        },
+                        onTap: () => Get.to(() => ForgetPassword()),
                         child: const Text(
                           "Forgot password?",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 25),
+
+                /// LOGIN BUTTON
                 Transform(
-                  transform: Matrix4.translationValues(muchDelayedAnimation.value * width, 0, 0),
+                  transform:
+                  Matrix4.translationValues(muchDelayedAnimation.value * width, 0, 0),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: ElevatedButton(
+                      onPressed: _validateInputs,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                        minimumSize: Size(width, 50),
-                        elevation: 8,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
-                      onPressed: _validateInputs,
                       child: Obx(() {
                         return loginController.isLoading.value
                             ? const CircularProgressIndicator(color: Colors.teal)
                             : const Text(
-                          'Login',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          "Login",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         );
                       }),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
+
+                /// REGISTER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('New here?', style: TextStyle(color: Colors.white70)),
+                    const Text("New here?", style: TextStyle(color: Colors.white70)),
                     const SizedBox(width: 5),
                     GestureDetector(
                       onTap: () => Get.toNamed(Routes.REGISTER),
-                      child: const Text('Register',
-                          style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold)),
-                    ),
+                      child: const Text(
+                        "Register",
+                        style: TextStyle(
+                            color: Colors.yellowAccent,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    )
                   ],
                 ),
               ],
@@ -276,6 +329,36 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _inputField({
+    required IconData icon,
+    required String label,
+    bool obscure = false,
+    Widget? suffix,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+    Function(String?)? onSaved,
+  }) {
+    return TextFormField(
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      validator: validator,
+      onSaved: onSaved,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Colors.white),
+        suffixIcon: suffix,
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white70),
+        filled: true,
+        fillColor: Colors.white24,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: BorderSide.none,
+        ),
+      ),
     );
   }
 }

@@ -1,15 +1,17 @@
 import 'dart:math' as logger;
-import 'package:chat_app/Models/DatabaseHelper.dart';
+import 'package:bilSend/Models/DatabaseHelper.dart';
 import 'package:dio/dio.dart' as dio;
+import 'package:encrypt/encrypt.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:chat_app/Models/upload_proof_model.dart';
-import 'package:chat_app/services/api/api_constants.dart';
-import 'package:chat_app/services/api/interceptors/dio_client.dart';
-import 'package:chat_app/services/storage/storage_service.dart';
+import 'package:bilSend/Models/upload_proof_model.dart';
+import 'package:bilSend/services/api/api_constants.dart';
+import 'package:bilSend/services/api/interceptors/dio_client.dart';
+import 'package:bilSend/services/storage/storage_service.dart';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
-
+import 'package:pointycastle/asymmetric/api.dart';
 import '../../Models/AuthUser.dart';
 import '../../Models/Country.dart';
 import '../../Models/ProofStepGuide.dart';
@@ -18,10 +20,40 @@ import '../../Models/company_info.dart';
 import '../../Models/transaction_model.dart';
 
 class ApiRepository {
-  final logger = Logger();
+  static const String _publicKeyPem = """
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAskF0bHo+OoJsOzxXQSTe
+by0IQuqTLyaAGNSSZSn6tyRYwf26NXCG0aOTDAY3aayAUPgBtdc/3moPz89vjpMM
+KKRXdq0nnXGct03wcEmeKs9oT9lz3G6YsQiYvnD7VSPTEilw7t33EbRwCNmhTJJK
+9fSqnlCHjuD0Qqe3eqI8LrCjzQwBXmRETgc4DLkRJ0ZkqQ2aFp3ub0eFdStRmE28
+bq5KtuPUYwbvHeUrGRgs+BAEMHTiX2exMIifA9xS6tCSB157+2VNAJdAhTgHJztF
+6UvhKWifYg36bHKOWF2C4oVIssku8p++gqY+R46nQJMSTn7J4S07XhALXegk6MwK
+MQIDAQAB
+-----END PUBLIC KEY-----
+  """;
 
   final Dio _dio = Dio();
   RxList<Proof> proofUpdates = <Proof>[].obs;
+
+  RSAPublicKey _parsePublicKey(){
+    final parser = RSAKeyParser();
+    final cleanedPem = _publicKeyPem.trim();
+    return parser.parse(cleanedPem) as RSAPublicKey;
+  }
+  // 🔐 ENCRYPT MESSAGE
+  String encryptMessage(String message) {
+    try {
+      final publicKey = _parsePublicKey();
+
+      final encrypter = Encrypter(
+        RSA(publicKey: publicKey, encoding: RSAEncoding.OAEP),
+      );
+
+      return encrypter.encrypt(message).base64;
+    } catch (e, s) {
+      rethrow;
+    }
+  }
 
   // LOGIN
   Future<Map<String, dynamic>> loginUser({
@@ -29,11 +61,13 @@ class ApiRepository {
     required String password,
   }) async {
     try {
+      final encryptedPhone = encryptMessage(phoneNumber);
+      final encryptedPassword = encryptMessage(password);
       final response = await Dio().post(
         ApiConstants.login,
         data: {
-          'phone_number': phoneNumber.trim(),
-          'password': password.trim(),
+          'phone_number': encryptedPhone,
+          'password': encryptedPassword,
         },
         options: Options(
           headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -130,13 +164,10 @@ class ApiRepository {
         'success': false,
         'message': errorMessage,
       };
-    } catch (e) {
-      // Handle unexpected errors
-      logger.e('Unexpected login error: $e');
-
+      } catch (e, stack) {
       return {
         'success': false,
-        'message': 'An unexpected error occurred. Please try again.',
+        'message': e.toString(), // 🔥 SHOW REAL ERROR
       };
     }
   }
@@ -152,13 +183,19 @@ class ApiRepository {
     String? location,
   }) async {
     try {
+      final encryptedFullname = encryptMessage(fullname);
+      final encryptedEmail = email != null ? encryptMessage(email) : null;
+      final encryptedPhone = phoneNumber != null ? encryptMessage(phoneNumber) : null;
+      final encryptedPassword = encryptMessage(password);
+      final encryptedConfirmPassword = encryptMessage(confirmPassword);
+
       final Map<String, dynamic> data = {
-        'fullname': fullname,
-        'password': password,
-        'password_confirmation': confirmPassword,
+        'fullname': encryptedFullname,
+        'password': encryptedPassword,
+        'password_confirmation': encryptedConfirmPassword,
       };
-      if (email != null) data['email'] = email;
-      if (phoneNumber != null) data['phone_number'] = phoneNumber;
+      if (email != null) data['email'] = encryptedEmail;
+      if (phoneNumber != null) data['phone_number'] = encryptedPhone;
       if (role != null) data['role'] = role;
       if (location != null) data['location'] = location;
 
@@ -232,98 +269,83 @@ class ApiRepository {
         throw Exception('Logout failed with status ${response.statusCode}');
       }
     } catch (e) {
-      logger.e('Logout error: $e');
       rethrow;
     }
   }
-  Future<dynamic> updateUser({
+
+  Future<Map<String, dynamic>> updateUser({
     required int userId,
-    required dynamic userData,
-    bool isMultipart = false,
+    required Map<String, dynamic> userData,
   }) async {
     try {
-      print('🚀 API Repository - updateUser called');
-      print('   User ID: $userId');
-      print('   Data type: ${userData.runtimeType}');
+      //  Prepare data ---
+      final Map<String, dynamic> formMap = {};
 
-      // Enhanced debugging for FormData
-      if (userData is dio.FormData) {
-        print('📦 FormData details:');
-        print('   Field count: ${userData.fields.length}');
-        print('   File count: ${userData.files.length}');
+      userData.forEach((key, value) async {
+        if (value == null || value.toString().isEmpty) return;
 
-        // Check each field
-        for (var i = 0; i < userData.fields.length; i++) {
-          final field = userData.fields[i];
-          print('   Field $i: ${field.key} = ${field.value}');
+        if (key == 'image') {
+          // Handle image file
+          formMap[key] = await MultipartFile.fromFile(
+            value.toString(),
+            filename: value.toString().split('/').last,
+          );
+        } else if (['fullname', 'email', 'phone_number', 'password', 'location'].contains(key)) {
+          // Encrypt sensitive fields
+          formMap[key] = encryptMessage(value.toString().trim());
+        } else {
+          formMap[key] = value.toString();
         }
+      });
 
-        // Check each file
-        for (var i = 0; i < userData.files.length; i++) {
-          final file = userData.files[i];
-          print('   File $i: ${file.key} = ${file.value.filename}');
-        }
-      }
+      // Create FormData ---
+      final FormData payload = FormData.fromMap(formMap);
 
-      // Get token with debugging
+      //  Get auth token ---
       final token = await StorageService.getToken();
+      if (token == null) throw Exception("No auth token found");
 
-      if (token == null) {
-        print('❌ NO AUTH TOKEN - User might not be logged in');
-        throw Exception("No auth token found");
-      }
-
-      // Prepare headers
-      Map<String, dynamic> headers = {
+      // Prepare headers (Dio sets multipart headers automatically) ---
+      final headers = {
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       };
 
-      // Add Content-Type for multipart
-      if (isMultipart) {
-        headers['Content-Type'] = 'multipart/form-data';
-      }
 
-      print('🔑 Request headers: $headers');
-      print('➡️ Sending PUT to: ${ApiConstants.updateUserById(userId)}');
-
+      // Send PUT request with timeout ---
       final response = await DioClient.client.put(
         ApiConstants.updateUserById(userId),
-        data: userData,
-        options: Options(headers: headers),
+        data: payload,
+        options: Options(
+          headers: headers,
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
 
-      print('✅ Response received: ${response.statusCode}');
-      print('📄 Response data: ${response.data}');
-
-      logger.i('Update user success: ${response.data}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return response.data;
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
       } else {
-        print('❌ Unexpected status code: ${response.statusCode}');
-        print('❌ Response message: ${response.statusMessage}');
-        print('❌ Response headers: ${response.headers}');
         throw Exception('Failed to update user: ${response.statusMessage}');
       }
-    } catch (e, stacktrace) {
-      print('❌ API Repository Error: $e');
-      print('📝 Stack trace: $stacktrace');
+    } catch (e) {
 
-      if (e is dio.DioException) {
-        print('🔍 DioException details:');
-        print('   Type: ${e.type}');
-        print('   Message: ${e.message}');
-        print('   Response: ${e.response?.data}');
-        print('   Status: ${e.response?.statusCode}');
-        print('   Headers: ${e.response?.headers}');
+      if (e is DioException) {
+        String errorMessage = 'Failed to update user';
+        if (e.response?.statusCode == 400) {
+          errorMessage = 'Invalid data provided. Please check your information.';
+        } else if (e.type == DioExceptionType.connectionTimeout) {
+          errorMessage = 'Connection timeout. Please try again.';
+        } else if (e.response?.data != null && e.response!.data is Map) {
+          final data = e.response!.data as Map<String, dynamic>;
+          errorMessage = data['message'] ?? data.toString();
+        }
+
+        throw Exception(errorMessage);
       }
-
-      logger.e('Update user error', error: e, stackTrace: stacktrace);
-      rethrow;
+      throw Exception('Unexpected error: $e');
     }
   }
-
   // PASSWORD RESET USING EMAIL
 
   Future<dynamic> passwordResetRequest({
@@ -346,12 +368,6 @@ class ApiRepository {
 
       return response.data;
     } catch (e) {
-
-      if (e is dio.DioException) {
-        print('   Response: ${e.response?.data}');
-        print('   Status Code: ${e.response?.statusCode}');
-      }
-
       rethrow;
     }
   }
@@ -361,8 +377,6 @@ class ApiRepository {
     required String newPassword,
   }) async {
     try {
-      print('🔐 Confirming Password Reset');
-
       final response = await DioClient.client.post(
         ApiConstants.password_reset_confirm,
         data: {
@@ -379,14 +393,6 @@ class ApiRepository {
 
       return response.data;
     } catch (e, stacktrace) {
-      print('❌ Password Reset Confirm Error: $e');
-      print('🧵 Stacktrace: $stacktrace');
-
-      if (e is dio.DioException) {
-        print('   Response: ${e.response?.data}');
-        print('   Status Code: ${e.response?.statusCode}');
-      }
-
       rethrow;
     }
   }
@@ -407,21 +413,22 @@ class ApiRepository {
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         await StorageService.clearAll(); // Clear tokens & local data
-        logger.i('✅ Account deleted successfully');
       } else {
         throw Exception('Failed to delete account');
       }
     } catch (e) {
-      logger.e('❌ Delete account failed: $e');
       rethrow;
     }
   }
-
-/// Fetch upload proofs with optional filters and pagination
   Future<Proof?> uploadProof(FormData formData) async {
     try {
       final token = await StorageService.getToken();
       if (token == null) throw Exception("No auth token found. Please login again.");
+
+      print('=== API REPOSITORY UPLOAD PROOF ===');
+      print('Sending to: ${ApiConstants.uploadProof}');
+      print('FormData fields: ${formData.fields.length}');
+      print('FormData files: ${formData.files.length}');
 
       final response = await _dio.post(
         ApiConstants.uploadProof,
@@ -430,31 +437,36 @@ class ApiRepository {
           headers: {
             'Accept': 'application/json',
             'Authorization': 'Bearer $token',
-            'Content-Type': 'multipart/form-data',
+            // DO NOT set Content-Type - Dio will set it for multipart
           },
         ),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        print('Upload successful: ${response.data}');
         final proof = Proof.fromJson(response.data['data']);
 
-        // ✅ Save locally for offline use
+        // Save locally for offline use
         await DatabaseHelper().insertProof(proof);
-
-        // ✅ Update observable list (UI refresh)
-        if (!proofUpdates.any((p) => p.id == proof.id)) {
-          proofUpdates.insert(0, proof); // add to top
-        }
 
         return proof;
       } else {
         throw Exception('Failed to upload proof. Status: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+
+      String errorMessage = 'Failed to upload proof';
+      if (e.response?.data != null && e.response!.data is Map) {
+        final data = e.response!.data as Map<String, dynamic>;
+        errorMessage = data['message'] ?? 'Validation error: ${data['errors'] ?? data}';
+      }
+
+      throw Exception(errorMessage);
     } catch (e) {
+      print('Unexpected error in uploadProof: $e');
       rethrow;
     }
   }
-
   Future<List<Proof>> fetchAllProofs({bool forceRefresh = false}) async {
     final localProofs = await DatabaseHelper().getAllProofs();
 
@@ -541,11 +553,20 @@ class ApiRepository {
         throw Exception("No auth token found. Please login again.");
       }
 
+      // Encrypt text fields only
+      final encryptedStatus = encryptMessage(status);
+      final encryptedStatusNote = statusNote != null ? encryptMessage(statusNote) : null;
+
       final Map<String, dynamic> data = {
-        'status': status,
-        if (statusNote != null) 'status_note': statusNote,
-        if (chargeRuleId != null) 'charge_rule': chargeRuleId,
+        'status': encryptedStatus,
+        if (encryptedStatusNote != null) 'status_note': encryptedStatusNote,
+        if (chargeRuleId != null) 'charge_rule': chargeRuleId, // Send as integer, NOT encrypted
       };
+
+      print('Updating proof status with data:');
+      print('Status: [ENCRYPTED]');
+      print('Status Note: ${statusNote != null ? '[ENCRYPTED]' : 'null'}');
+      print('Charge Rule ID: $chargeRuleId');
 
       final url = ApiConstants.updateProofStatus(proofId);
 
@@ -556,25 +577,42 @@ class ApiRepository {
           headers: {
             'Authorization': 'Bearer $token',
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
           },
           extra: {'showLoader': true},
         ),
       );
 
-
       if (response.statusCode == 200) {
-        return Proof.fromJson(response.data['data']);
+        if (response.data['success'] == true) {
+          // If proof was deleted (money_delivered), return null
+          if (response.data['message']?.contains('deleted') == true) {
+            return null;
+          }
+          return Proof.fromJson(response.data['data']);
+        } else {
+          throw Exception(response.data['message'] ?? 'Update failed');
+        }
       } else {
         throw Exception('Failed to update proof status. Status: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      final msg = e.response?.data['message'] ?? e.message;
-      throw Exception('API Error: $msg');
+      print('Dio Error: ${e.type}');
+      print('Message: ${e.message}');
+      print('Response: ${e.response?.data}');
+
+      String errorMessage = 'Failed to update proof status';
+      if (e.response?.data != null && e.response!.data is Map) {
+        final data = e.response!.data as Map<String, dynamic>;
+        errorMessage = data['message'] ?? e.message ?? 'API Error';
+      }
+
+      throw Exception(errorMessage);
     } catch (e) {
+      print('Unexpected error: $e');
       throw Exception('Unexpected error: $e');
     }
   }
-
 
   // Fetch proof updates for a given user ID
   Future<List<dynamic>> fetchProofUpdates() async {
@@ -757,11 +795,19 @@ class ApiRepository {
     }
   }
 
-// GET logged-in user transactions with pagination
+  /// Fetch logged-in user transactions (with offline cache)
   Future<List<TransactionModel>> getTransactions({
     int page = 1,
-    int pageSize = 4,
+    int pageSize = 10,
+    bool forceRefresh = false,
   }) async {
+    final localData = await DatabaseHelper().getAllTransactions();
+
+    // If we have local data and not forcing refresh, return cached data
+    if (localData.isNotEmpty && !forceRefresh) {
+      return localData;
+    }
+
     try {
       final response = await DioClient.client.get(
         ApiConstants.getTransactions,
@@ -774,15 +820,24 @@ class ApiRepository {
 
       if (response.statusCode == 200) {
         final List list = response.data['data'];
-        return list.map((json) => TransactionModel.fromJson(json)).toList();
+
+        final transactions = list
+            .map((json) => TransactionModel.fromJson(json))
+            .toList();
+
+        // Save into local DB
+        await DatabaseHelper().clearTransactions();
+        await DatabaseHelper().insertTransactionList(transactions);
+
+        return transactions;
       } else {
         throw Exception('Failed to fetch transactions');
       }
     } catch (e) {
-      rethrow;
+      // fallback offline
+      return localData;
     }
   }
-
   /// POST: Create announcement
   Future<Map<String, dynamic>> createAnnouncement({
     required String title,

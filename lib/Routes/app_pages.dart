@@ -1,10 +1,10 @@
-import 'package:chat_app/modules/admin/admin_upload_proofs/admin_proofs.dart';
-import 'package:chat_app/modules/auth/Login/login_binding.dart';
-import 'package:chat_app/modules/auth/Login/login_screen.dart';
-import 'package:chat_app/modules/auth/Register/register_binding.dart';
-import 'package:chat_app/modules/auth/Register/register_screen.dart';
-import 'package:chat_app/shared/splashScreen/splashBinding.dart';
-import 'package:chat_app/shared/splashScreen/splashScreen.dart';
+import 'package:bilSend/modules/admin/admin_upload_proofs/admin_proofs.dart';
+import 'package:bilSend/modules/auth/Login/login_binding.dart';
+import 'package:bilSend/modules/auth/Login/login_screen.dart';
+import 'package:bilSend/modules/auth/Register/register_binding.dart';
+import 'package:bilSend/modules/auth/Register/register_screen.dart';
+import 'package:bilSend/shared/splashScreen/splashBinding.dart';
+import 'package:bilSend/shared/splashScreen/splashScreen.dart';
 import 'package:get/get.dart';
 import 'package:get/get_navigation/src/routes/get_route.dart';
 import '../modules/admin/admin_home/admin_home_screen.dart';

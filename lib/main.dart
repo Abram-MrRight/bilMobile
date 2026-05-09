@@ -1,5 +1,5 @@
-import 'package:chat_app/shared/bindings/initial_binding.dart';
-import 'package:chat_app/shared/drawer/ThemeController.dart';
+import 'package:bilSend/shared/bindings/initial_binding.dart';
+import 'package:bilSend/shared/drawer/ThemeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:path/path.dart';
@@ -14,7 +14,7 @@ import 'services/api/api_repository.dart';
 
 // Future<void> deleteDB() async {
 //   final dbPath = await getDatabasesPath();
-//   final path = join(dbPath, 'chat_app.db');
+//   final path = join(dbPath, 'bilSend.db');
 //   await deleteDatabase(path);
 //   print('🗑️ Local SQLite database deleted');
 // }

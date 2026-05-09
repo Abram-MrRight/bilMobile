@@ -1,9 +1,16 @@
 class ApiConstants {
   // 🌐 Base URL
 
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
-  //Public base URL for assets (e.g., images, audio files)
-  static const String publicBaseUrl = 'http://10.0.2.2:8000';
+  // Staging API base URL
+  // static const String baseUrl ='http://10.0.2.2:8000/api';
+  //
+  // // Public base URL for assets (images, audio, files)
+  // static const String publicBaseUrl ='http://10.0.2.2:8000';
+
+  static const String baseUrl ='https://bil.atong-abraham.site/api';
+
+  // Public base URL for assets (images, audio, files)
+  static const String publicBaseUrl ='https://bil.atong-abraham.site';
 
   // static const String baseUrl = 'http://10.161.208.154:8000/api';
   // // Public base URL for assets (e.g., images, audio files)   
@@ -127,5 +134,51 @@ class ApiConstants {
 
     // Case 5: Any other format - just prepend base URL
     return '${ApiConstants.publicBaseUrl}/$path';
+  }
+  static String getCompanyLogoUrl(
+      String? path, {
+        String placeholderAsset = 'assets/images/logo_placeholder.png',
+      }) {
+    if (path == null || path.isEmpty) {
+      return placeholderAsset;
+    }
+
+    String url = path;
+
+    // Already full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    // Normalize leading slash
+    if (url.startsWith('/')) {
+      url = url.substring(1);
+    }
+
+    return '$publicBaseUrl/$url';
+  }
+
+  /// Handles proof image URLs and placeholders
+  static String getProofImageUrl(
+      String? path, {
+        String placeholder = 'media/proofs/placeholder.png',
+      }) {
+    if (path == null || path.isEmpty) {
+      return '$publicBaseUrl/$placeholder';
+    }
+
+    String url = path;
+
+    // Already full URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    // Normalize leading slash
+    if (url.startsWith('/')) {
+      url = url.substring(1);
+    }
+
+    return '$publicBaseUrl/$url';
   }
 }
