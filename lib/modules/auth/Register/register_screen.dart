@@ -95,9 +95,12 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
+    try {
+      if (!_formKey.currentState!.validate()) return;
+
       _formKey.currentState!.save();
-      bool result = await controller.registerUser(
+
+      final result = await controller.registerUser(
         fullname: fullname,
         email: email.isEmpty ? null : email,
         phoneNumber: phoneNumber.isEmpty ? null : phoneNumber,
@@ -105,7 +108,32 @@ class _RegisterScreenState extends State<RegisterScreen>
         password: passwordController.text.trim(),
         confirmPassword: confirmPasswordController.text.trim(),
       );
-      if (result) Get.offAllNamed(Routes.LOGIN);
+
+      if (!result) return;
+
+      if (email.isEmpty) {
+        Get.snackbar("Error", "Email is required for OTP");
+        return;
+      }
+
+      // ✅ send OTP immediately
+      final otpResult = await controller.apiRepository.generateOtp(
+        email: email,
+      );
+
+      if (otpResult['success'] == true) {
+        // ✅ go OTP screen directly with email
+        Get.toNamed(
+          Routes.OTP,
+          arguments: {
+            'email': email,
+          },
+        );
+      } else {
+        Get.snackbar("Error", otpResult['message']);
+      }
+    } catch (e) {
+      Get.snackbar("Error", e.toString());
     }
   }
 
@@ -295,11 +323,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                           const SizedBox(height: 10),
                           // Location
-                          TextFormField(
-                            decoration: _buildInputDecoration('Location'),
-                            onSaved: (val) => location = val!.trim(),
-                            style: const TextStyle(color: Colors.white),
-                          ),
+                          // TextFormField(
+                          //   decoration: _buildInputDecoration('Location'),
+                          //   onSaved: (val) => location = val!.trim(),
+                          //   style: const TextStyle(color: Colors.white),
+                          // ),
                           // Password
                           const SizedBox(height: 10),
                           // Confirm Password

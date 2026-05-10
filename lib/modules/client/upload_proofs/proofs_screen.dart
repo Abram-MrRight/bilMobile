@@ -6,9 +6,12 @@ import 'package:intl/intl.dart';
 
 import '../../../Models/Country.dart';
 import '../../../Models/upload_proof_model.dart';
+import '../client_home/client_home_controller.dart';
 
 class UploadProofScreen extends StatelessWidget {
-  const UploadProofScreen({Key? key}) : super(key: key);
+   UploadProofScreen({Key? key}) : super(key: key);
+
+  final homeController = Get.find<ClientHomeController>();
 
   @override
   Widget build(BuildContext context) {
@@ -346,13 +349,14 @@ class UploadProofScreen extends StatelessWidget {
 
   }
   void _showProofDialog(BuildContext context, UploadProofController controller) {
-    final senderNameController = TextEditingController();
+    final senderNameController = TextEditingController(text: homeController.currentUserName.value,);
+    final senderEmailController = TextEditingController(text: homeController.currentUserEmail.value,);
     final senderContactController = TextEditingController();
+
+    // Receiver stays empty
     final receiverNameController = TextEditingController();
-    final senderEmailController = TextEditingController();
     final amountController = TextEditingController();
     final notesController = TextEditingController();
-
     final ImagePicker _picker = ImagePicker();
 
     // Use the controller's selectedCountry as source of truth
@@ -458,6 +462,7 @@ class UploadProofScreen extends StatelessWidget {
                   // Sender Name
                   TextField(
                     controller: senderNameController,
+                    readOnly: true,
                     decoration: const InputDecoration(
                         labelText: 'Sender Name',
                         prefixIcon: Icon(Icons.person),
@@ -489,6 +494,7 @@ class UploadProofScreen extends StatelessWidget {
                   // Receiver Email
                   TextField(
                     controller: senderEmailController,
+                    readOnly: true,
                     decoration: const InputDecoration(
                         labelText: 'Sender Email',
                         prefixIcon: Icon(Icons.email),

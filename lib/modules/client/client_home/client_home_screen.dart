@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../Models/transaction_model.dart';
 import '../../../services/api/api_repository.dart';
 import '../../../shared/drawer/Drawer.dart';
 import '../../announcements/announcement_controller.dart';
@@ -28,12 +29,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   late final List<Widget> screens;
 
   final RxBool isSyncing = false.obs;
+  final RxList<TransactionModel> transactions = <TransactionModel>[].obs;
 
   final ClientHomeController controller =
   Get.put(ClientHomeController(apiRepository: ApiRepository()));
 
   final AnnouncementController announcementController =
   Get.put(AnnouncementController(apiRepository: ApiRepository()));
+
+  int getTotalTransactions() {
+    return transactions.length;
+  }
+
+  double getTotalAmount() {
+    return transactions.fold(
+      0.0,
+          (sum, txn) => sum + txn.amountValue,
+    );
+  }
 
   @override
   void initState() {
@@ -101,7 +114,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                      "Company Announcements",
+                      "Company News",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -112,7 +125,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                   const SizedBox(height: 10),
                   CarouselSlider(
                     options: CarouselOptions(
-                      height: 200,
+                      height: 150,
                       autoPlay: true,
                       enlargeCenterPage: true,
                       viewportFraction: 0.9,
@@ -204,12 +217,47 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     }).toList(),
                   ),
                   const SizedBox(height: 120),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            title: "Uploaded Proofs",
+                            value: "${controller.proofUpdates.length}",
+                            icon: Icons.verified,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            title: "Total Amount",
+                            value: "${getTotalAmount().toStringAsFixed(2)}",
+                            icon: Icons.attach_money,
+                            color: Colors.green,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            title: "Transactions",
+                            value: "${transactions.length}",
+                            icon: Icons.swap_horiz,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
           ),
+          const SizedBox(height: 120),
           Positioned(
-            bottom: 20,
+            bottom: 40,
             right: 20,
             child: Obx(() {
               return FloatingActionButton(
@@ -482,4 +530,57 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       ),
     );
   }
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: color.withOpacity(0.12),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

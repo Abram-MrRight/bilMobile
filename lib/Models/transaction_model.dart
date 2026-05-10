@@ -37,4 +37,6 @@ class TransactionModel {
       confirmedAt: DateTime.parse(json['confirmed_at']),
     );
   }
+  double get amountValue =>
+      double.tryParse(amount.replaceAll(',', '')) ?? 0.0;
 }

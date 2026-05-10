@@ -37,7 +37,6 @@ class RegisterController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-        Get.offAllNamed(Routes.LOGIN);
         return true;
       } else {
         throw Exception(response['message'] ?? 'Registration failed');

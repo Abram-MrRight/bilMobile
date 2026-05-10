@@ -3,6 +3,7 @@ import 'package:bilSend/Models/DatabaseHelper.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:encrypt/encrypt.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/cupertino.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:bilSend/Models/upload_proof_model.dart';
 import 'package:bilSend/services/api/api_constants.dart';
@@ -184,7 +185,7 @@ MQIDAQAB
   }) async {
     try {
       final encryptedFullname = encryptMessage(fullname);
-      final encryptedEmail = email != null ? encryptMessage(email) : null;
+      final encryptedEmail = email;
       final encryptedPhone = phoneNumber != null ? encryptMessage(phoneNumber) : null;
       final encryptedPassword = encryptMessage(password);
       final encryptedConfirmPassword = encryptMessage(confirmPassword);
@@ -1038,6 +1039,80 @@ MQIDAQAB
         return {
           'success': false,
           'message': response.data?['message'] ?? 'Failed to fetch contact',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
+    }
+  }
+
+  /// GENERATE OTP
+  Future<Map<String, dynamic>> generateOtp({
+    required String email,
+  }) async {
+    try {
+      final response = await DioClient.client.post(
+        ApiConstants.otp_generate,
+        data: {
+          "email": email,
+        },
+        options: Options(
+          extra: {'showLoader': true},
+          validateStatus: (status) => true,
+        ),
+      );
+      debugPrint("📩 STATUS CODE: ${response.statusCode}");
+      debugPrint("📩 RESPONSE DATA: ${response.data}");
+
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': response.data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'Failed to generate OTP',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
+    }
+  }
+
+  /// VERIFY OTP
+  Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    try {
+      final response = await DioClient.client.post(
+        ApiConstants.otp_validate,
+        data: {
+          "email": email,
+          "otp_code": otpCode,
+        },
+        options: Options(
+          extra: {'showLoader': true},
+          validateStatus: (status) => true,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': response.data?['message'] ?? 'OTP verification failed',
         };
       }
     } catch (e) {

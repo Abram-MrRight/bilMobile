@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen>
                 FadeTransition(
                   opacity: fadeAnimation,
                   child: Text(
-                    'bilSend',
+                    'BilSend',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.bold,

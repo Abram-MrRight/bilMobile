@@ -23,6 +23,8 @@ class ApiConstants {
 
   /// POST: Register with phone/email + password
   static const String register = '$baseUrl/auth/register/';
+  static const String otp_generate = '$baseUrl/otp_generate/';
+  static const String otp_validate = '$baseUrl/otp_verify/';
 
   /// POST: Login using a token (Sanctum-protected)
   static const String loginWithToken = '$baseUrl/auth/login_with_token';

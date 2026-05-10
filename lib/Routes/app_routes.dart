@@ -9,10 +9,11 @@ part of 'app_pages.dart';
   static const UPLOADPROOF = '/uploadProof'; // New route
   static const PROFILE = '/profile';
 
-
   // Admin routes
   static const ADMINHOMESCREEN = '/adminhomescreen';
   static const ADMINUPLOADPROOF = '/adminuploadproof';
+
+  static const OTP = '/otp';
 
 
 

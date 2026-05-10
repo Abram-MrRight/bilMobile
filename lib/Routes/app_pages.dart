@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:get/get_navigation/src/routes/get_route.dart';
 import '../modules/admin/admin_home/admin_home_screen.dart';
 import '../modules/admin/admin_home/admin_home_binding.dart';
+import '../modules/auth/otp/otp_screen.dart';
 import '../modules/client/client_home/client_home_binding.dart';
 import '../modules/client/client_home/client_home_screen.dart';
 import '../modules/client/upload_proofs/proofs_binding.dart';
@@ -56,6 +57,10 @@ class AppPages {
     GetPage(
       name: Routes.PROFILE,
       page: () => UserProfileScreen(),
+    ),
+    GetPage(
+      name: Routes.OTP,
+      page: () => OtpScreen(),
     ),
 
   ];
