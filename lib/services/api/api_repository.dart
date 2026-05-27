@@ -14,6 +14,7 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:pointycastle/asymmetric/api.dart';
 import '../../Models/AuthUser.dart';
+import '../../Models/Contacts.dart';
 import '../../Models/Country.dart';
 import '../../Models/ProofStepGuide.dart';
 import '../../Models/agent.dart';
@@ -546,7 +547,6 @@ MQIDAQAB
     required int proofId,
     required String status,
     String? statusNote,
-    int? chargeRuleId,
   }) async {
     try {
       final token = await StorageService.getToken();
@@ -561,13 +561,11 @@ MQIDAQAB
       final Map<String, dynamic> data = {
         'status': encryptedStatus,
         if (encryptedStatusNote != null) 'status_note': encryptedStatusNote,
-        if (chargeRuleId != null) 'charge_rule': chargeRuleId, // Send as integer, NOT encrypted
       };
 
       print('Updating proof status with data:');
       print('Status: [ENCRYPTED]');
       print('Status Note: ${statusNote != null ? '[ENCRYPTED]' : 'null'}');
-      print('Charge Rule ID: $chargeRuleId');
 
       final url = ApiConstants.updateProofStatus(proofId);
 
@@ -796,7 +794,6 @@ MQIDAQAB
     }
   }
 
-  /// Fetch logged-in user transactions (with offline cache)
   Future<List<TransactionModel>> getTransactions({
     int page = 1,
     int pageSize = 10,
@@ -1018,33 +1015,68 @@ MQIDAQAB
     }
   }
 
-  /// FETCH: WhatsApp Contact by ID
-  Future<Map<String, dynamic>> getWhatsAppContact() async {
+  Future<Map<String, dynamic>> getWhatsAppContact({bool forceRefresh = false}) async {
     try {
+      // 1. FIRST: try local DB
+      final local = await DatabaseHelper().getWhatsAppContactsLocal();
+
+      if (local.isNotEmpty && !forceRefresh) {
+        return {
+          'success': true,
+          'data': local.map((e) => {
+            'id': e.id,
+            'name': e.name,
+            'phone_number': e.phoneNumber,
+          }).toList(),
+        };
+      }
+
+      // 2. fallback: API call
       final response = await DioClient.client.get(
-        ApiConstants.getWhatsAppContact, // your GET URL
+        ApiConstants.getWhatsAppContact,
         options: Options(
-          extra: {'showLoader': true},
+          extra: {'showLoader': false},
           validateStatus: (status) => true,
         ),
       );
 
-      if (response.statusCode == 200) {
-        // Successfully fetched contact
-        return {
-          'success': true,
-          'data': response.data['data'], // contact info
-        };
-      } else {
-        return {
-          'success': false,
-          'message': response.data?['message'] ?? 'Failed to fetch contact',
-        };
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data;
+
+        if (responseData['success'] == true) {
+          final data = responseData['data'] ?? [];
+
+          // save offline
+          final contacts = (data as List)
+              .map((e) => WhatsAppContact.fromJson(e))
+              .toList();
+
+          await DatabaseHelper().clearWhatsAppContacts();
+          await DatabaseHelper().insertWhatsAppContacts(contacts);
+
+          return {
+            'success': true,
+            'data': data,
+          };
+        }
       }
-    } catch (e) {
+
       return {
         'success': false,
-        'message': e.toString(),
+        'message': 'Server error: ${response.statusCode}',
+      };
+    } catch (e) {
+      // 3. FINAL fallback: offline DB
+      final local = await DatabaseHelper().getWhatsAppContactsLocal();
+
+      return {
+        'success': local.isNotEmpty,
+        'data': local.map((e) => {
+          'id': e.id,
+          'name': e.name,
+          'phone_number': e.phoneNumber,
+        }).toList(),
+        'message': 'Offline mode',
       };
     }
   }

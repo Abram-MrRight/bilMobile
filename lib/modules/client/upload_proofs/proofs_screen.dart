@@ -17,11 +17,17 @@ class UploadProofScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final UploadProofController controller = Get.find();
     var expandedProofIds = <String>{}.obs;
-    String formatMoney(dynamic amount) {
+    String formatMoney(dynamic amount, {String? currencySymbol}) {
       final value = double.tryParse(amount.toString()) ?? 0.0;
-      return NumberFormat('#,##0.00').format(value);
-    }
+      final formatted = NumberFormat('#,##0.00').format(value);
 
+      if (currencySymbol == null || currencySymbol.isEmpty) {
+        return formatted;
+      }
+
+      // Use the actual currency symbol from the database
+      return '$currencySymbol $formatted';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -126,7 +132,7 @@ class UploadProofScreen extends StatelessWidget {
                                           ),
                                           const SizedBox(height: 6),
                                           Text(
-                                            "${formatMoney(proof.amount)} ${proof.currency}",
+                                            formatMoney(proof.amount, currencySymbol: proof.currency),
                                             style: const TextStyle(
                                               color: Colors.green,
                                               fontWeight: FontWeight.bold,
@@ -241,8 +247,8 @@ class UploadProofScreen extends StatelessWidget {
       // Floating Action Button for adding a new proof
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showProofDialog(context, controller),
-        backgroundColor: Colors.blueAccent,
-        child: const Icon(Icons.add, size: 30),
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.add, size: 20),
         tooltip: 'Add Proof',
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
@@ -538,7 +544,6 @@ class UploadProofScreen extends StatelessWidget {
                     readOnly: true,
                     decoration: const InputDecoration(
                       labelText: 'Currency',
-                      prefixIcon: Icon(Icons.attach_money),
                       border: OutlineInputBorder(),
                     ),
                   )),

@@ -72,62 +72,69 @@ class AdminProofsScreen extends StatelessWidget {
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey.shade600,
                 isScrollable: false,
-                tabs: statusLabels.entries.map((entry) {
-                  final color = statusColors[entry.key] ?? Colors.grey;
+                tabs: statusLabels.entries.toList().asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+
+                  final color = statusColors[item.key] ?? Colors.grey;
+
                   return Obx(() {
                     int unreadCount = controller.displayedProofs
-                        .where((p) => p.status.value == entry.key)
+                        .where((p) => p.status.value == item.key)
                         .length;
 
-                    return Tab(
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            child: Center(
-                              child: Text(
-                                entry.value,
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // TAB BOX
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                item.value,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: color,
-                                  fontSize: 16,
                                 ),
                               ),
+
+                              if (unreadCount > 0) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    unreadCount.toString(),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              ]
+                            ],
+                          ),
+                        ),
+
+                        // ARROW CONNECTOR (except last tab)
+                        if (index != statusLabels.length - 1)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 18,
+                              color: Colors.red,
                             ),
                           ),
-                          if (unreadCount > 0)
-                            Positioned(
-                              top: -4,
-                              right: -4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black,
-                                      blurRadius: 3,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  unreadCount.toString(),
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 10),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                      ],
                     );
                   });
                 }).toList(),
@@ -370,40 +377,31 @@ class AdminProofsScreen extends StatelessWidget {
     final AdminProofsController controller = Get.find();
 
     final statusOptions = {
-      'money_delivered': 'Money Delivered',
-      'receiver_contacted': 'Receiver Contacted',
-      'money_received': 'Money Received',
       'pending': 'Pending',
+      'money_received': 'Money Received',
+      'receiver_contacted': 'Receiver Contacted',
+      'money_delivered': 'Money Delivered',
     };
 
     String selectedStatus =
     proof.status.value.isNotEmpty ? proof.status.value : 'pending';
 
-    // Close any existing bottom sheet first
     if (Get.isBottomSheetOpen ?? false) {
       Get.back();
     }
 
     Get.bottomSheet(
-      AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
+      Container(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
+
+            // drag handle
             Container(
               width: 50,
               height: 5,
@@ -412,80 +410,262 @@ class AdminProofsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
+
             const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Update Status',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.teal.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ...statusOptions.entries.map((entry) {
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: selectedStatus == entry.key
-                            ? Colors.teal.shade50
-                            : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: selectedStatus == entry.key
-                              ? Colors.teal
-                              : Colors.transparent,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: RadioListTile<String>(
-                        activeColor: Colors.teal,
-                        title: Text(
-                          entry.value,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: selectedStatus == entry.key
-                                ? Colors.teal.shade800
-                                : Colors.grey.shade800,
+
+            Text(
+              'Update Delivery Status',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.teal.shade800,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: statusOptions.entries
+                      .toList()
+                      .asMap()
+                      .entries
+                      .map((e) {
+                    final index = e.key;
+                    final entry = e.value;
+
+                    final currentIndex =
+                    statusOptions.keys.toList().indexOf(selectedStatus);
+
+                    final isCompleted = index < currentIndex;
+                    final isCurrent = index == currentIndex;
+                    final isPending = index > currentIndex;
+
+                    final isLast = index == statusOptions.length - 1;
+
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+
+                          /// LEFT SIDE TIMELINE
+                          Column(
+                            children: [
+
+                              /// STEP CIRCLE
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isCompleted || isCurrent
+                                      ? Colors.teal
+                                      : Colors.grey.shade300,
+                                  boxShadow: isCurrent
+                                      ? [
+                                    BoxShadow(
+                                      color: Colors.teal.withOpacity(0.4),
+                                      blurRadius: 10,
+                                      spreadRadius: 1,
+                                    )
+                                  ]
+                                      : [],
+                                ),
+                                child: Icon(
+                                  isCompleted
+                                      ? Icons.check
+                                      : isCurrent
+                                      ? Icons.radio_button_checked
+                                      : Icons.circle_outlined,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+
+                              /// CONNECTOR + UPWARD ARROW
+                              if (!isLast)
+                                Column(
+                                  children: [
+
+                                    Container(
+                                      width: 3,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: (isCompleted || isCurrent)
+                                            ? Colors.teal
+                                            : Colors.grey.shade300,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+
+                                    Icon(
+                                      Icons.keyboard_arrow_up_rounded,
+                                      size: 24,
+                                      color: (isCompleted || isCurrent)
+                                          ? Colors.teal
+                                          : Colors.grey.shade400,
+                                    ),
+
+                                    Container(
+                                      width: 3,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: (isCompleted || isCurrent)
+                                            ? Colors.teal
+                                            : Colors.grey.shade300,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
                           ),
-                        ),
-                        value: entry.key,
-                        groupValue: selectedStatus,
-                        onChanged: (value) {
-                          selectedStatus = value!;
-                          Get.back();
-                          _confirmStatusChange(proof, selectedStatus);
-                        },
+
+                          const SizedBox(width: 14),
+
+                          /// RIGHT CARD
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                selectedStatus = entry.key;
+                                Get.back();
+                                _confirmStatusChange(proof, selectedStatus);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                margin: const EdgeInsets.only(bottom: 18),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? Colors.teal.shade50
+                                      : isCompleted
+                                      ? Colors.green.shade50
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isCurrent
+                                        ? Colors.teal
+                                        : isCompleted
+                                        ? Colors.green
+                                        : Colors.transparent,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+
+                                    /// TITLE ROW
+                                    Row(
+                                      children: [
+
+                                        Expanded(
+                                          child: Text(
+                                            entry.value,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                              color: isCurrent
+                                                  ? Colors.teal.shade800
+                                                  : isCompleted
+                                                  ? Colors.green.shade700
+                                                  : Colors.grey.shade800,
+                                            ),
+                                          ),
+                                        ),
+
+                                        if (isCompleted)
+                                          const Icon(
+                                            Icons.verified,
+                                            color: Colors.green,
+                                            size: 18,
+                                          ),
+
+                                        if (isCurrent)
+                                          Icon(
+                                            Icons.timelapse,
+                                            color: Colors.teal.shade700,
+                                            size: 18,
+                                          ),
+                                      ],
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    /// HINT TEXT
+                                    Text(
+                                      _getStatusHint(entry.key),
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        height: 1.4,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+
+                                    /// CURRENT STATUS LABEL
+                                    if (isCurrent) ...[
+                                      const SizedBox(height: 10),
+
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.teal,
+                                          borderRadius:
+                                          BorderRadius.circular(20),
+                                        ),
+                                        child: const Text(
+                                          "CURRENT STATUS",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }).toList(),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () => Get.back(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                ),
+              ),
+            ),
+
+            // cancel button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () => Get.back(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  minimumSize: const Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
+                ),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
         ),
       ),
       isScrollControlled: true,
-      enableDrag: true,
       backgroundColor: Colors.transparent,
     );
   }
@@ -503,11 +683,7 @@ class AdminProofsScreen extends StatelessWidget {
 
     final String defaultNote = statusNotes[newStatus] ?? 'Status updated via admin panel';
 
-    if (newStatus == 'money_delivered') {
-      _showChargeRuleSelection(proof, newStatus, defaultNote);
-    } else {
       _showConfirmationDialog(proof, newStatus, defaultNote);
-    }
   }
 
   void _showConfirmationDialog(proof, String newStatus, String defaultNote) {
@@ -515,7 +691,7 @@ class AdminProofsScreen extends StatelessWidget {
 
     Get.dialog(
       Dialog(
-        backgroundColor: Colors.transparent, // transparent for nice shadow
+        backgroundColor: Colors.transparent,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutBack,
@@ -534,7 +710,6 @@ class AdminProofsScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Animated Icon
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -548,8 +723,6 @@ class AdminProofsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Title
               Text(
                 'Confirm Status Change',
                 style: TextStyle(
@@ -560,8 +733,6 @@ class AdminProofsScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-
-              // Message
               Text(
                 'Are you sure you want to change the status to "${newStatus.replaceAll('_', ' ')}"?\n\nThis will attach the note:\n"$defaultNote"',
                 style: TextStyle(
@@ -571,12 +742,9 @@ class AdminProofsScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-
-              // Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Cancel Button
                   TextButton(
                     onPressed: () => Get.back(),
                     style: TextButton.styleFrom(
@@ -594,37 +762,60 @@ class AdminProofsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Confirm Button
                   ElevatedButton(
                     onPressed: () async {
-                      Get.back();
+                      Get.back(); // Close dialog
+
+                      // Show loading indicator
+                      Get.dialog(
+                        const Center(child: CircularProgressIndicator()),
+                        barrierDismissible: false,
+                      );
+
                       try {
-                        await controller.updateProofStatus(
+                        // Step 1: Update via API
+                        final response = await controller.updateProofStatus(
                           proofId: proof.id!,
-                          status: newStatus,
+                          status: newStatus.trim(),
                           statusNote: defaultNote,
                         );
 
-                        proof.status.value = newStatus;
-                        proof.statusNote.value = defaultNote;
+                        Get.back(); // Close loading dialog
+
+                        if (response == null) {
+                          // success (your controller returns null on success)
+
+                          await controller.fetchProofsFromApiAndSync();
+
+                          Get.snackbar(
+                            'Success',
+                            'Status updated to ${newStatus.replaceAll('_', ' ')}',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.green,
+                            colorText: Colors.white,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Error',
+                            response,
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
+                      }  catch (e) {
+                        Get.back(); // Close loading dialog if open
+
+                        // Revert local state if API failed
+                        proof.status.value = proof.status.value; // Force refresh
 
                         Get.snackbar(
-                          'Success',
-                          'Proof status updated to "${newStatus.replaceAll('_', ' ')}"',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: Colors.green.shade600,
-                          colorText: Colors.white,
-                          duration: const Duration(seconds: 3),
-                        );
-                      } catch (e) {
-                        Get.snackbar(
                           'Error',
-                          'Failed to update proof status: $e',
+                          'Failed to update proof status: ${e.toString()}',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.red.shade600,
                           colorText: Colors.white,
-                          duration: const Duration(seconds: 3),
+                          duration: const Duration(seconds: 4),
                         );
                       }
                     },
@@ -649,189 +840,18 @@ class AdminProofsScreen extends StatelessWidget {
       barrierDismissible: true,
     );
   }
-
-
-  void _showChargeRuleSelection(proof, String newStatus, String defaultNote) {
-    final AdminProofsController controller = Get.find();
-
-    // Set the active proof and fetch charge rules
-    controller.activeProof = proof;
-    controller.pendingStatus = newStatus;
-    controller.defaultNote = defaultNote;
-
-    // Fetch charge rules and show bottom sheet when complete
-    controller.fetchChargeRules().then((_) {
-      // Close any existing bottom sheet first
-      if (Get.isBottomSheetOpen ?? false) {
-        Get.back();
-      }
-      Get.bottomSheet(
-        DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.4,
-          maxChildSize: 0.9,
-          builder: (_, scrollController) {
-            return ChargeRuleSelectionBottomSheet(
-              scrollController: scrollController,
-              controller: controller,
-            );
-          },
-        ),
-        isScrollControlled: true,
-        enableDrag: true,
-        isDismissible: true,
-      );
-    }).catchError((error) {
-      Get.snackbar(
-        'Error',
-        'Failed to load charge rules: $error',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade600,
-        colorText: Colors.white,
-      );
-    });
-  }
-}
-
-// Separate widget for charge rule selection
-class ChargeRuleSelectionBottomSheet extends StatelessWidget {
-  final ScrollController scrollController;
-  final AdminProofsController controller;
-  final RxInt selectedRuleId = 0.obs;
-
-  ChargeRuleSelectionBottomSheet({
-    Key? key,
-    required this.scrollController,
-    required this.controller,
-  }) : super(key: key) {
-    // Initialize selected rule ID safely
-    if (controller.chargeRules.isNotEmpty) {
-      selectedRuleId.value = controller.chargeRules.first['id'] as int;
+  String _getStatusHint(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Transaction is waiting for processing';
+      case 'money_received':
+        return 'Funds have been received successfully';
+      case 'receiver_contacted':
+        return 'Receiver has been notified';
+      case 'money_delivered':
+        return 'Money successfully delivered';
+      default:
+        return '';
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 12,
-            offset: const Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Select Charge Rule",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal.shade800,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Obx(() {
-              if (controller.chargeRules.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      'No charge rules available',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ),
-                );
-              }
-
-              return DropdownButtonFormField<int>(
-                value: selectedRuleId.value,
-                isExpanded: true,
-                menuMaxHeight: 300,
-                items: controller.chargeRules.map((rule) {
-                  return DropdownMenuItem<int>(
-                    value: rule['id'] as int,
-                    child: Text(
-                      "${rule['currency']} | Min: ${rule['min_amount']} - Max: ${rule['max_amount']} | Charge: ${rule['charge_amount']}",
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey.shade800),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) selectedRuleId.value = value;
-                },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                ),
-              );
-            }),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (selectedRuleId.value > 0) {
-                    Get.back();
-                    controller.updateProofStatus(
-                      proofId: controller.activeProof!.id!,
-                      status: controller.pendingStatus!,
-                      statusNote: controller.defaultNote!,
-                      chargeRuleId: selectedRuleId.value,
-                    );
-                  } else {
-                    Get.snackbar(
-                      'Error',
-                      'Please select a charge rule',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: Colors.red.shade600,
-                      colorText: Colors.white,
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 6,
-                  shadowColor: Colors.teal.withOpacity(0.1),
-                ),
-                child: const Text(
-                  "Confirm & Save",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.red),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

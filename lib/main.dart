@@ -22,7 +22,6 @@ void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   // await deleteDB();
 
-
   // Register ApiRepository here
   Get.put<ApiRepository>(ApiRepository());
   Get.put(ProofBadgeService());

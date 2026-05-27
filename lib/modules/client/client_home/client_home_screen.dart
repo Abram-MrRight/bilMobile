@@ -9,11 +9,11 @@ import '../../../services/api/api_repository.dart';
 import '../../../shared/drawer/Drawer.dart';
 import '../../announcements/announcement_controller.dart';
 import '../../guide/GuideScreen.dart';
+import '../../guide/TransactionsScreen.dart';
 import '../upload_proofs/proofs_controller.dart';
 import '../upload_proofs/proofs_screen.dart';
 import 'client_home_controller.dart';
 import 'package:lottie/lottie.dart';
-
 
 class ClientHomeScreen extends StatefulWidget {
   const ClientHomeScreen({Key? key}) : super(key: key);
@@ -29,20 +29,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   late final List<Widget> screens;
 
   final RxBool isSyncing = false.obs;
-  final RxList<TransactionModel> transactions = <TransactionModel>[].obs;
-
   final ClientHomeController controller =
   Get.put(ClientHomeController(apiRepository: ApiRepository()));
 
   final AnnouncementController announcementController =
   Get.put(AnnouncementController(apiRepository: ApiRepository()));
 
-  int getTotalTransactions() {
-    return transactions.length;
-  }
-
   double getTotalAmount() {
-    return transactions.fold(
+    return controller.transactions.fold(
       0.0,
           (sum, txn) => sum + txn.amountValue,
     );
@@ -66,8 +60,16 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           return UploadProofScreen();
         },
       ),
-       GuideScreen(),
+      GuideScreen(),
     ];
+  }
+  // Add this method to refresh everything
+  Future<void> _refreshAllData() async {
+    await Future.wait([
+      announcementController.fetchAnnouncements(),
+      controller.loadTransactions(forceRefresh: true), // Force refresh transactions
+      controller.fetchProofUpdates(),
+    ]);
   }
 
   Widget _buildHomeContent() {
@@ -89,6 +91,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
         "image": "https://picsum.photos/800/402"
       },
     ];
+
     return Obx(() {
       if (announcementController.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
@@ -104,6 +107,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           RefreshIndicator(
             onRefresh: () async {
               await announcementController.fetchAnnouncements();
+              await controller.loadTransactions(forceRefresh: true);
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -216,36 +220,56 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 120),
+                  const SizedBox(height: 30),
+
+                  // Quick Actions Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      "Overview",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Stats Cards - Styled like GuideScreen cards
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
+                    child: Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
                       children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            title: "Uploaded Proofs",
-                            value: "${controller.proofUpdates.length}",
-                            icon: Icons.verified,
-                            color: Colors.blue,
-                          ),
+                        _buildHomeCard(
+                          title: "Uploaded Proofs",
+                          value: "${controller.proofUpdates.length}",
+                          icon: Icons.verified,
+                          color: Colors.blue,
+                          onTap: () {
+                            setState(() {
+                              index = 1;
+                              controller.proofUpdateCount.value = 0;
+                            });
+                          },
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildStatCard(
-                            title: "Total Amount",
-                            value: "${getTotalAmount().toStringAsFixed(2)}",
-                            icon: Icons.attach_money,
-                            color: Colors.green,
-                          ),
+                        _buildHomeCard(
+                          title: "Transactions",
+                          value: "${controller.transactions.length}",
+                          icon: Icons.swap_horiz,
+                          color: Colors.orange,
+                          onTap: () {
+                            Get.to(() => TransactionsScreen());
+                          },
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildStatCard(
-                            title: "Transactions",
-                            value: "${transactions.length}",
-                            icon: Icons.swap_horiz,
-                            color: Colors.orange,
-                          ),
+                        _buildHomeCard(
+                          title: "Total Amount",
+                          value: "${getTotalAmount().toStringAsFixed(2)}",
+                          icon: Icons.attach_money,
+                          color: Colors.green,
+                          onTap: null,
                         ),
                       ],
                     ),
@@ -255,7 +279,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 120),
+          const SizedBox(height: 90),
           Positioned(
             bottom: 40,
             right: 20,
@@ -265,75 +289,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                 onPressed: controller.isLoading.value
                     ? null
                     : () async {
-                  final confirm = await Get.dialog<bool>(
-                    AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                      contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
 
-                      title: Row(
-                        children: [
-                          FaIcon(
-                            FontAwesomeIcons.whatsapp,
-                            color: Colors.green,
-                            size: 26,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            'Chat with Company',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-
-                      content: const Text(
-                        'You are about to start a WhatsApp conversation with the company. '
-                            'Do you want to continue?',
-                        style: TextStyle(
-                          fontSize: 15,
-                          height: 1.4,
-                          color: Colors.black87,
-                        ),
-                      ),
-
-                      actions: [
-                        TextButton(
-                          onPressed: () => Get.back(result: false),
-                          child: const Text(
-                            'CANCEL',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                          ),
-                          onPressed: () => Get.back(result: true),
-                          child: const Text(
-                            'CHAT ON WHATSAPP',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm != true) return;
-
-                  controller.isLoading.value = true;
                   try {
                     await controller.launchWhatsAppDynamic();
                   } finally {
@@ -358,18 +314,30 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     });
   }
 
+  Widget _buildHomeCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    return SizedBox(
+      width: (MediaQuery.of(context).size.width - 48) / 2,
+      child: _HomeCard(
+        title: title,
+        value: value,
+        icon: icon,
+        color: color,
+        onTap: onTap,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Navigation bar items
-    final items = <Widget>[
-      _buildNavItem(Icons.chat, 'Home', 0),
-      _buildNavItem(Icons.settings, 'Proofs', 1),
-      _buildNavItem(Icons.help, 'Guide', 2),
-    ];
-
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight + 10), // 👈 taller
+        preferredSize: const Size.fromHeight(kToolbarHeight + 10),
         child: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -451,136 +419,278 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       ),
       drawer: BuildDrawer(),
       body: screens[index],
-      bottomNavigationBar: CurvedNavigationBar(
-        key: navigatorKey,
-        backgroundColor: Colors.transparent,
-        color:   Color(0xFF4CAF50),
-        buttonBackgroundColor: Colors.white,
-        items: items,
-        index: index,
-        onTap: (selectedIndex) {
-          setState(() {
-            index = selectedIndex;
-          });
-
-          if (selectedIndex == 1) {
-            controller.proofUpdateCount.value = 0;
-          }
-        },
-        animationCurve: Curves.easeInOut,
-        animationDuration: const Duration(milliseconds: 300),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 18,
+              offset: const Offset(0, -5),
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildModernNavItem(Icons.home, 'Home', 0),
+              _buildModernNavItem(Icons.upload_file, 'Proofs', 1),
+              _buildModernNavItem(Icons.info, 'Guide', 2),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // Helper for nav item
-  Widget _buildNavItem(IconData icon, String label, int itemIndex) {
-    return SizedBox(
-      height: 60,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 28,
-                color: index == itemIndex ? Colors.red : Colors.white,
+  // Modern navigation item builder
+  Widget _buildModernNavItem(IconData icon, String label, int itemIndex) {
+    final isSelected = index == itemIndex;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          index = itemIndex;
+        });
+
+        if (itemIndex == 1) {
+          controller.proofUpdateCount.value = 0;
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: isSelected ? const Color(0xFF4CAF50) : Colors.grey.shade600,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? const Color(0xFF4CAF50) : Colors.grey.shade700,
               ),
+            ),
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                height: 2,
+                width: 20,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            // Proofs badge
+            if (itemIndex == 1)
+              Obx(() {
+                if (controller.proofUpdateCount.value > 0) {
+                  return Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                      child: Text(
+                        controller.proofUpdateCount.value.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeCard extends StatefulWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _HomeCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  State<_HomeCard> createState() => _HomeCardState();
+}
+
+class _HomeCardState extends State<_HomeCard> with SingleTickerProviderStateMixin {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        if (widget.onTap != null) {
+          widget.onTap!();
+        } else {
+          // Show details dialog for non-clickable cards
+          _showDetailsDialog();
+        }
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_pressed ? 0.1 : 0.25),
+              blurRadius: _pressed ? 4 : 12,
+              offset: Offset(0, _pressed ? 2 : 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon with colored background
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                widget.icon,
+                color: widget.color,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Value
+            Text(
+              widget.value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: widget.onTap != null ? widget.color : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 6),
+            // Title
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDetailsDialog() {
+    Get.dialog(
+      Center(
+        child: Container(
+          width: 300,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.black.withOpacity(0.15),
+              width: 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.3),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.info_outline, color: widget.color, size: 28),
+              ),
+              const SizedBox(height: 16),
               Text(
-                label,
+                widget.title,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: widget.color,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.value,
+                style: TextStyle(
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: index == itemIndex ? Colors.blueAccent : Colors.black87,
+                  color: widget.color,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.color,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Get.back(),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],
           ),
-          // Proofs badge
-          if (itemIndex == 1)
-            Obx(() {
-              if (controller.proofUpdateCount.value > 0) {
-                return Positioned(
-                  top: 8,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                    child: Text(
-                      controller.proofUpdateCount.value.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            }),
-        ],
+        ),
       ),
+      barrierDismissible: true,
     );
   }
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: color.withOpacity(0.12),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 }

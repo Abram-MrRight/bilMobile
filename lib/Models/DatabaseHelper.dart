@@ -3,6 +3,7 @@ import 'package:bilSend/Models/upload_proof_model.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'AuthUser.dart';
+import 'Contacts.dart';
 import 'ProofStepGuide.dart';
 import 'agent.dart';
 import 'announcements.dart';
@@ -129,6 +130,13 @@ CREATE TABLE transactions(
   net_amount TEXT,
   confirmed_at TEXT
 )
+''');
+    await db.execute('''
+  CREATE TABLE whatsapp_contacts(
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    phone_number TEXT
+  )
 ''');
   }
 
@@ -512,7 +520,6 @@ CREATE TABLE transactions(
     await db.delete('proof_steps');
   }
 
-  // ---------------------- TRANSACTIONS ----------------------
   Future<int> insertTransaction(TransactionModel transaction) async {
     final db = await database;
     return await db.insert(
@@ -577,6 +584,41 @@ CREATE TABLE transactions(
   Future<void> clearTransactions() async {
     final db = await database;
     await db.delete('transactions');
+  }
+
+  Future<void> insertWhatsAppContacts(List<WhatsAppContact> contacts) async {
+    final db = await database;
+    final batch = db.batch();
+
+    for (var c in contacts) {
+      batch.insert(
+        'whatsapp_contacts',
+        {
+          'id': c.id,
+          'name': c.name,
+          'phone_number': c.phoneNumber,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<WhatsAppContact>> getWhatsAppContactsLocal() async {
+    final db = await database;
+    final result = await db.query('whatsapp_contacts');
+
+    return result.map((json) => WhatsAppContact(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      phoneNumber: json['phone_number'] as String,
+    )).toList();
+  }
+
+  Future<void> clearWhatsAppContacts() async {
+    final db = await database;
+    await db.delete('whatsapp_contacts');
   }
 
 }

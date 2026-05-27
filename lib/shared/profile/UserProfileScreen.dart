@@ -18,7 +18,7 @@ class UserProfileScreen extends StatelessWidget {
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.teal, Colors.green],
+              colors: [Colors.teal, Colors.white60],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -42,7 +42,7 @@ class UserProfileScreen extends StatelessWidget {
               height: 200,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green, Colors.teal],
+                  colors: [Colors.green, Colors.white60],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

@@ -17,11 +17,12 @@ class BuildDrawer extends StatelessWidget {
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Colors.teal, Colors.green],
+            gradient: LinearGradient(
+              // colors: [Colors.teal, Colors.white60],
+              colors: [Colors.white, Colors.green],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -34,12 +35,12 @@ class BuildDrawer extends StatelessWidget {
               const Text(
                 'Logout',
                 style: TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                    fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
               const Text(
                 'Are you sure you want to logout?',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+                style: TextStyle(color: Colors.black, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
@@ -50,7 +51,7 @@ class BuildDrawer extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.teal,
-                      minimumSize: const Size(50, 30),
+                      minimumSize: const Size(30, 10),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -60,7 +61,7 @@ class BuildDrawer extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
-                      minimumSize: const Size(80, 36),
+                      minimumSize: const Size(50, 20),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -85,11 +86,11 @@ class BuildDrawer extends StatelessWidget {
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal:8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             gradient: const LinearGradient(
-              colors: [Colors.redAccent, Colors.deepOrange],
+              colors: [Colors.white, Colors.white60],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -98,37 +99,37 @@ class BuildDrawer extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.delete_forever, size: 20, color: Colors.white),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               const Text(
                 'Delete Account',
                 style: TextStyle(
                     fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
               const Text(
                 'Are you sure you want to delete your account? This cannot be undone.',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+                style: TextStyle(color: Colors.black, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: Colors.redAccent,
-                      minimumSize: const Size(40, 30),
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(50, 20),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
                     onPressed: () => Get.back(),
-                    child: const Text('Cancel', style: TextStyle(fontSize: 14)),
+                    child: const Text('Cancel', style: TextStyle(fontSize: 10)),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      minimumSize: const Size(80, 36),
+                      backgroundColor: Colors.red,
+                      minimumSize: const Size(50, 20),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -137,7 +138,7 @@ class BuildDrawer extends StatelessWidget {
                       Get.back();
                     },
                     child: const Text('Delete',
-                        style: TextStyle(color: Colors.white, fontSize: 14)),
+                        style: TextStyle(color: Colors.white, fontSize: 10)),
                   ),
                 ],
               )
@@ -160,7 +161,7 @@ class BuildDrawer extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.teal, Colors.green],
+                    colors: [Colors.white60, Colors.green],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

@@ -268,57 +268,31 @@ class AdminProofsController extends GetxController {
     required int proofId,
     required String status,
     String? statusNote,
-    int? chargeRuleId,
   }) async {
     isLoading.value = true;
+
     try {
       final updatedProof = await apiRepository.updateProofStatus(
         proofId: proofId,
         status: status,
         statusNote: statusNote,
-        chargeRuleId: chargeRuleId,
       );
 
-
-      if (updatedProof != null) {
-        // Update in database
-        await DatabaseHelper().insertProof(updatedProof);
-
-        // Update in controller
-        await addOrUpdateProof(updatedProof);
-
-        // Also update in client controller if available
-        if (Get.isRegistered<UploadProofController>()) {
-          Get.find<UploadProofController>().addOrUpdateProof(updatedProof);
-        }
+      if (updatedProof == null) {
+        return 'API returned null';
       }
-      return null;
+
+      await DatabaseHelper().insertProof(updatedProof);
+      await addOrUpdateProof(updatedProof);
+
+      return null; // success
     } catch (e) {
-      return 'Failed to update proof status: $e';
+      return e.toString();
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Fetch charge rules
-  Future<void> fetchChargeRules() async {
-    isLoadingRules.value = true;
-    try {
-      final rulesFromApi = await apiRepository.fetchChargeRules();
-      chargeRules.assignAll(rulesFromApi);
-    } catch (e) {
-      chargeRules.clear();
-      Get.snackbar(
-        'Error',
-        'Failed to fetch charge rules: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    } finally {
-      isLoadingRules.value = false;
-    }
-  }
 
   bool get hasMoreData => displayedProofs.length < allProofs.length;
 

@@ -133,7 +133,7 @@ class _UserProfileEditScreenState extends State<UserProfileEditScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        backgroundColor: Colors.teal,
+        backgroundColor: Colors.white60,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -247,7 +247,7 @@ class _UserProfileEditScreenState extends State<UserProfileEditScreen> {
               Center(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: Colors.green,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),

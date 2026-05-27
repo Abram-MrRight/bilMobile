@@ -1,25 +1,37 @@
 import 'dart:async';
+import 'package:dio/src/dio.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import '../../../Models/DatabaseHelper.dart';
+import '../../../Models/transaction_model.dart';
 import '../../../Models/upload_proof_model.dart';
 import '../../../Routes/app_pages.dart';
+import '../../../services/TransactionService.dart';
 import '../../../services/api/api_repository.dart';
 import '../../../services/storage/storage_service.dart';
 import '../../client/upload_proofs/ProofBadgeService.dart';
-import '../admin_upload_proofs/admin_proofs_controller.dart';
-
   class AdminHomeController extends GetxController {
     final ApiRepository apiRepository;
     final Logger logger = Logger();
 
-    AdminHomeController({required this.apiRepository});
+    late final TransactionService transactionService;
+
+    AdminHomeController({required this.apiRepository}) {
+      transactionService = TransactionService(apiRepository);
+    }
 
     final RxBool isLoading = false.obs;
     final RxString errorMessage = ''.obs;
     final RxString currentUserName = ''.obs;
     final RxInt currentUserId = 0.obs;
     final RxBool isSyncing = false.obs;
+
+    // In AdminHomeController
+    final RxList<TransactionModel> transactions = <TransactionModel>[].obs;
+    final RxList<Proof> proofs = <Proof>[].obs;
+    final RxInt activeUsersCount = 0.obs;
+    final RxInt proofUpdateCount = 0.obs;
+
 
     // --- NEW: For Bottom Navigation Bar ---
     final RxInt selectedPageIndex = 0.obs;
@@ -41,9 +53,12 @@ import '../admin_upload_proofs/admin_proofs_controller.dart';
       super.onInit();
       _initializeUserData();
 
+      loadTransactions(forceRefresh: true);
+
       // Poll proofs every 60s
       _pollingTimer = Timer.periodic(const Duration(seconds: 60), (_) async {
         await refreshUnreadProofsCount();
+        await loadTransactions(forceRefresh: true);
       });
     }
 
@@ -81,6 +96,23 @@ import '../admin_upload_proofs/admin_proofs_controller.dart';
         // logger.e('Failed to load user full name or ID: $e');
         currentUserName.value = '';
         currentUserId.value = 0;
+      }
+    }
+    Future<void> loadTransactions({bool forceRefresh = false}) async {
+      try {
+        isLoading.value = true;
+
+        final data = await transactionService.fetchTransactions(
+          forceRefresh: forceRefresh,
+        );
+
+        transactions.assignAll(data);
+        transactions.refresh(); // IMPORTANT
+
+      } catch (e) {
+        logger.e("Failed to load transactions: $e");
+      } finally {
+        isLoading.value = false;
       }
     }
 

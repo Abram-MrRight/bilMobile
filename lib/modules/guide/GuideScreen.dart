@@ -22,11 +22,6 @@ class _GuideScreenState extends State<GuideScreen> {
       'screen': UploadProofGuideScreen(),
     },
     {
-      'title': 'How to Send Money',
-      'image': 'assets/images/createChat.png',
-      'screen': SendMoneyScreen(),
-    },
-    {
       'title': 'Contact Info',
       'image': 'assets/images/agentLine.png',
       'screen': AgentLineGuideScreen(),
