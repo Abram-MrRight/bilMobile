@@ -207,28 +207,160 @@ MQIDAQAB
         options: Options(extra: {'showLoader': true}),
       );
 
-      // Return a consistent map for both success and error
-      if ((response.statusCode == 200 || response.statusCode == 201) &&
-          response.data['success'] == true) {
-        return {
-          'success': true,
-          'message': response.data['message'] ?? 'User registered successfully',
-          'data': response.data['user'] ?? {},
-          'token': response.data['token'] ?? {},
-        };
+      // Success case
+      if ((response.statusCode == 200 || response.statusCode == 201)) {
+        // Check if the response indicates success
+        if (response.data['success'] == true) {
+          return {
+            'success': true,
+            'message': response.data['message'] ?? 'User registered successfully',
+            'data': response.data['user'] ?? {},
+            'token': response.data['token'] ?? {},
+          };
+        } else {
+          // API returned 200 but with success=false
+          return _parseErrorMessage(response.data);
+        }
       } else {
+        // Unexpected status code
         return {
           'success': false,
-          'message': response.data['message'] ?? 'Registration failed',
+          'message': 'Server error: Please try again later',
         };
       }
+    } on DioException catch (e) {
+      // Handle Dio-specific errors
+      return _handleDioError(e);
     } catch (e) {
-      // Return failure map instead of throwing
+      // Handle any other errors
       return {
         'success': false,
-        'message': e.toString(),
+        'message': 'An unexpected error occurred. Please try again.',
       };
     }
+  }
+
+// Helper method to parse error messages from response
+  Map<String, dynamic> _parseErrorMessage(dynamic responseData) {
+    String errorMessage = 'Registration failed';
+
+    if (responseData is Map) {
+      // Check for different error response formats
+
+      // Format 1: { "message": "The email has already been taken." }
+      if (responseData['message'] != null) {
+        errorMessage = responseData['message'];
+      }
+
+      // Format 2: { "errors": { "email": ["The email has already been taken."] } }
+      if (responseData['errors'] != null && responseData['errors'] is Map) {
+        final errors = responseData['errors'] as Map;
+
+        // Check for email errors
+        if (errors['email'] != null && errors['email'] is List) {
+          errorMessage = errors['email'][0];
+        }
+        // Check for phone number errors
+        else if (errors['phone_number'] != null && errors['phone_number'] is List) {
+          errorMessage = errors['phone_number'][0];
+        }
+        // Check for any other field errors
+        else if (errors.isNotEmpty) {
+          final firstError = errors.values.first;
+          if (firstError is List && firstError.isNotEmpty) {
+            errorMessage = firstError[0];
+          }
+        }
+      }
+
+      // Format 3: { "error": "Duplicate entry..." }
+      if (responseData['error'] != null) {
+        errorMessage = responseData['error'];
+      }
+    }
+
+    // Clean up the error message to be more user-friendly
+    errorMessage = _cleanErrorMessage(errorMessage);
+
+    return {
+      'success': false,
+      'message': errorMessage,
+    };
+  }
+
+// Helper method to handle Dio exceptions
+  Map<String, dynamic> _handleDioError(DioException e) {
+    String errorMessage = 'Connection error. Please check your internet.';
+
+    if (e.response != null) {
+      final statusCode = e.response?.statusCode;
+      final responseData = e.response?.data;
+
+      // Handle different status codes
+      switch (statusCode) {
+        case 400:
+          errorMessage = _parseErrorMessage(responseData)['message'];
+          break;
+        case 422:
+        // Validation errors (common for duplicate entries)
+          if (responseData is Map) {
+            errorMessage = _parseErrorMessage(responseData)['message'];
+          } else {
+            errorMessage = 'Invalid data provided. Please check your information.';
+          }
+          break;
+        case 409:
+          errorMessage = 'An account with this information already exists.';
+          break;
+        case 500:
+          errorMessage = 'Server error. Please try again later.';
+          break;
+        default:
+          errorMessage = 'Server error (Status $statusCode). Please try again.';
+      }
+    } else if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      errorMessage = 'Connection timeout. Please check your internet connection.';
+    } else if (e.type == DioExceptionType.connectionError) {
+      errorMessage = 'No internet connection. Please check your network settings.';
+    }
+
+    return {
+      'success': false,
+      'message': errorMessage,
+    };
+  }
+
+// Helper method to clean and format error messages
+  String _cleanErrorMessage(String message) {
+    // Common error patterns and their user-friendly versions
+    final Map<String, String> errorPatterns = {
+      r'email.*already.*taken': 'This email is already registered. Please use a different email or login.',
+      r'phone.*already.*taken': 'This phone number is already registered. Please use a different number or login.',
+      r'email.*must be unique': 'This email address is already in use.',
+      r'phone.*must be unique': 'This phone number is already in use.',
+      r'duplicate entry.*for key': 'An account with this information already exists.',
+      r'fullname.*required': 'Full name is required.',
+      r'password.*confirm': 'Passwords do not match.',
+      r'password.*at least': 'Password must be at least 6 characters long.',
+    };
+
+    String cleanedMessage = message;
+
+    for (final pattern in errorPatterns.entries) {
+      if (RegExp(pattern.key, caseSensitive: false).hasMatch(message)) {
+        cleanedMessage = pattern.value;
+        break;
+      }
+    }
+
+    // Remove technical prefixes
+    cleanedMessage = cleanedMessage
+        .replaceAll('Exception: ', '')
+        .replaceAll('DioException: ', '')
+        .trim();
+
+    return cleanedMessage;
   }
 
 

@@ -283,20 +283,16 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text(
-          "Verify Account",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.teal,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.teal),
-          onPressed: () => Get.back(),
-        ),
-      ),
+      // appBar: AppBar(
+      //   title: const Text(
+      //     "Verify Account",
+      //     style: TextStyle(fontWeight: FontWeight.w600),
+      //   ),
+      //   backgroundColor: Colors.white,
+      //   foregroundColor: Colors.teal,
+      //   elevation: 0,
+      //   centerTitle: true,
+      // ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(

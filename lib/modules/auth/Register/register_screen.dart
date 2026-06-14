@@ -96,9 +96,36 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   void _submitForm() async {
     try {
-      if (!_formKey.currentState!.validate()) return;
+      // Validate form first
+      if (!_formKey.currentState!.validate()) {
+        return;
+      }
 
       _formKey.currentState!.save();
+
+      // Validate that either email or phone is provided
+      if (email.isEmpty && phoneNumber.isEmpty) {
+        Get.snackbar(
+          "Validation Error",
+          "Please provide either an email address or phone number",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      // Validate email format if provided
+      if (email.isNotEmpty && !GetUtils.isEmail(email)) {
+        Get.snackbar(
+          "Invalid Email",
+          "Please enter a valid email address",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
 
       final result = await controller.registerUser(
         fullname: fullname,
@@ -111,29 +138,69 @@ class _RegisterScreenState extends State<RegisterScreen>
 
       if (!result) return;
 
+      // After successful registration, proceed with OTP
       if (email.isEmpty) {
-        Get.snackbar("Error", "Email is required for OTP");
+        Get.snackbar(
+          "Warning",
+          "Email is required for OTP verification",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
         return;
       }
 
-      // ✅ send OTP immediately
-      final otpResult = await controller.apiRepository.generateOtp(
-        email: email,
+      // Show loading indicator
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
       );
 
-      if (otpResult['success'] == true) {
-        // ✅ go OTP screen directly with email
-        Get.toNamed(
-          Routes.OTP,
-          arguments: {
-            'email': email,
-          },
+      try {
+        final otpResult = await controller.apiRepository.generateOtp(
+          email: email,
         );
-      } else {
-        Get.snackbar("Error", otpResult['message']);
+
+        Get.back(); // Close loading dialog
+
+        if (otpResult['success'] == true) {
+          Get.toNamed(
+            Routes.OTP,
+            arguments: {
+              'email': email,
+            },
+          );
+        } else {
+          String errorMsg = otpResult['message'] ?? 'Failed to send OTP';
+          Get.snackbar(
+            "OTP Error",
+            errorMsg,
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 4),
+          );
+        }
+      } catch (otpError) {
+        Get.back(); // Close loading dialog
+        Get.snackbar(
+          "OTP Error",
+          "Failed to send verification code. Please try again later.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
       }
     } catch (e) {
-      Get.snackbar("Error", e.toString());
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred. Please try again.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 
@@ -232,6 +299,17 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 child: Image.asset(
                                   'assets/images/logo.jpg',
                                   fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback if image fails to load
+                                    return Container(
+                                      color: Colors.teal,
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 50,
+                                        color: Colors.white,
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
